@@ -91,7 +91,7 @@
             </plugin>
             <plugin>
                 <groupId>org.openjfx</groupId>
-                <artifactId>javafx-maven-plugin</artifactId>
+                <artifactId>0.0.8</artifactId>
                 <version>${javafx.version}</version>
                 <executions>
                     <execution>
