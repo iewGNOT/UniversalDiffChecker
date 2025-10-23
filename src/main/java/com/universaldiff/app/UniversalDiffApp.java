@@ -249,7 +249,13 @@ public class UniversalDiffApp extends Application {
                                     String rowClass) {
         for (TextLine line : lines) {
             HBox row = new HBox();
-            row.getStyleClass().addAll("diff-row", rowClass);
+            row.getStyleClass().add("diff-row");
+            boolean hasDiff = line.segments().stream().anyMatch(segment -> segment.type() == SegmentType.DIFF);
+            if (hasDiff) {
+                row.getStyleClass().add(rowClass);
+            } else {
+                row.getStyleClass().add("diff-row-neutral");
+            }
 
             Label number = new Label(String.valueOf(line.number()));
             number.getStyleClass().add("diff-line-number");
@@ -325,7 +331,13 @@ public class UniversalDiffApp extends Application {
                                       boolean isLeftColumn) {
         for (BinaryLine line : lines) {
             HBox row = new HBox();
-            row.getStyleClass().addAll("diff-row", isLeftColumn ? "binary-row-left" : "binary-row-right");
+            row.getStyleClass().add("diff-row");
+            boolean hasDiff = line.cells().stream().anyMatch(BinaryCell::diff);
+            if (hasDiff) {
+                row.getStyleClass().add(isLeftColumn ? "binary-row-left" : "binary-row-right");
+            } else {
+                row.getStyleClass().add("binary-row-neutral");
+            }
 
             Label offsetLabel = new Label(String.format("%08X", line.offset()));
             offsetLabel.getStyleClass().add("binary-offset");
@@ -474,6 +486,7 @@ public class UniversalDiffApp extends Application {
     private record BinaryLine(int offset, List<BinaryCell> cells) {
     }
 }
+
 
 
 
