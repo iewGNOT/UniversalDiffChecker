@@ -16,10 +16,10 @@ Universal Difference Checker is a Java 17 / JavaFX desktop application designed 
 ## Project Structure
 `
 src/main/java
-й└йд com.universaldiff.app           # JavaFX entry point and UI composition
-й└йд com.universaldiff.core          # Comparison service, detection, IO helpers
-й└йд com.universaldiff.format        # Format adapters (TXT, BIN, CSV, JSON, XML)
-й╕йд com.universaldiff.ui            # View models powering the UI
+universaldiff.app               # JavaFX entry point and UI composition
+com.universaldiff.core          # Comparison service, detection, IO helpers
+com.universaldiff.format        # Format adapters (TXT, BIN, CSV, JSON, XML)
+com.universaldiff.ui            # View models powering the UI
 `
 
 ## Getting Started
