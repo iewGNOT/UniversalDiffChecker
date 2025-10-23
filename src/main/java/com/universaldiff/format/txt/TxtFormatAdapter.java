@@ -27,10 +27,10 @@ public class TxtFormatAdapter implements FormatAdapter {
     @Override
     public NormalizedContent normalize(FileDescriptor descriptor) throws IOException {
         Charset encoding = descriptor.getEncoding();
-        List<String> lines = Files.readAllLines(descriptor.getPath(), encoding)
-                .stream()
-                .map(this::normalizeLine)
-                .toList();
+        List<String> lines = new java.util.ArrayList<>();
+        try (java.util.stream.Stream<String> stream = Files.lines(descriptor.getPath(), encoding)) {
+            stream.map(this::normalizeLine).forEach(lines::add);
+        }
         return NormalizedContent.builder(FormatType.TXT)
                 .logicalRecords(lines)
                 .encoding(encoding)

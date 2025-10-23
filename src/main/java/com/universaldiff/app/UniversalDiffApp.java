@@ -201,11 +201,23 @@ public class UniversalDiffApp extends Application {
                 populateBinaryColumn(leftColumn, buildBinaryLines(leftBytes, rightBytes), true);
                 populateBinaryColumn(rightColumn, buildBinaryLines(rightBytes, leftBytes), false);
             } else {
-                String leftText = readText(session.getLeft().getPath(), session.getLeft().getEncoding());
-                String rightText = readText(session.getRight().getPath(), session.getRight().getEncoding());
+                String leftText = String.join("\n", session.getLeftContent().getLogicalRecords());
+                String rightText = String.join("\n", session.getRightContent().getLogicalRecords());
 
-                populateTextColumn(leftColumn, buildTextLines(leftText, rightText), "diff-match-left", "diff-row-left");
-                populateTextColumn(rightColumn, buildTextLines(rightText, leftText), "diff-match-right", "diff-row-right");
+                boolean leftTruncated = leftText.length() > TEXT_RENDER_LIMIT;
+                boolean rightTruncated = rightText.length() > TEXT_RENDER_LIMIT;
+                String leftShown = leftTruncated ? leftText.substring(0, TEXT_RENDER_LIMIT) : leftText;
+                String rightShown = rightTruncated ? rightText.substring(0, TEXT_RENDER_LIMIT) : rightText;
+
+                populateTextColumn(leftColumn, buildTextLines(leftShown, rightShown), "diff-delta-left", "diff-row-left");
+                populateTextColumn(rightColumn, buildTextLines(rightShown, leftShown), "diff-delta-right", "diff-row-right");
+
+                if (leftTruncated) {
+                    addTruncationNotice(leftColumn, false, leftText.length(), leftShown.length());
+                }
+                if (rightTruncated) {
+                    addTruncationNotice(rightColumn, false, rightText.length(), rightShown.length());
+                }
             }
         } catch (IOException ex) {
             showError("Render error", ex);
@@ -225,7 +237,7 @@ public class UniversalDiffApp extends Application {
 
     private void populateTextColumn(VBox column,
                                     List<TextLine> lines,
-                                    String matchClass,
+                                    String diffClass,
                                     String rowClass) {
         for (TextLine line : lines) {
             HBox row = new HBox();
@@ -241,9 +253,9 @@ public class UniversalDiffApp extends Application {
                 flow.getChildren().add(new Text(""));
             } else {
                 for (Segment segment : line.segments()) {
-                    if (segment.type() == SegmentType.MATCH) {
+                    if (segment.type() == SegmentType.DIFF) {
                         Label highlight = new Label(segment.text());
-                        highlight.getStyleClass().addAll("diff-text-highlight", matchClass);
+                        highlight.getStyleClass().addAll("diff-text-highlight", diffClass);
                         flow.getChildren().add(highlight);
                     } else {
                         Text text = new Text(segment.text());

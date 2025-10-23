@@ -1,0 +1,30 @@
+*** Begin Patch
+*** Update File: src/main/java/com/universaldiff/app/UniversalDiffApp.java
+@@
+-            } else {
+-                String leftText = readText(session.getLeft().getPath(), session.getLeft().getEncoding());
+-                String rightText = readText(session.getRight().getPath(), session.getRight().getEncoding());
+-
+-                populateTextColumn(leftColumn, buildTextLines(leftText, rightText), "diff-delta-left", "diff-row-left");
+-                populateTextColumn(rightColumn, buildTextLines(rightText, leftText), "diff-delta-right", "diff-row-right");
+-            }
++            } else {
++                String leftText = String.join("\n", session.getLeftContent().getLogicalRecords());
++                String rightText = String.join("\n", session.getRightContent().getLogicalRecords());
++
++                boolean leftTruncated = leftText.length() > TEXT_RENDER_LIMIT;
++                boolean rightTruncated = rightText.length() > TEXT_RENDER_LIMIT;
++                String leftShown = leftTruncated ? leftText.substring(0, TEXT_RENDER_LIMIT) : leftText;
++                String rightShown = rightTruncated ? rightText.substring(0, TEXT_RENDER_LIMIT) : rightText;
++
++                populateTextColumn(leftColumn, buildTextLines(leftShown, rightShown), "diff-delta-left", "diff-row-left");
++                populateTextColumn(rightColumn, buildTextLines(rightShown, leftShown), "diff-delta-right", "diff-row-right");
++
++                if (leftTruncated) {
++                    addTruncationNotice(leftColumn, false, leftText.length(), leftShown.length());
++                }
++                if (rightTruncated) {
++                    addTruncationNotice(rightColumn, false, rightText.length(), rightShown.length());
++                }
++            }
+*** End Patch
