@@ -49,6 +49,9 @@ public class BinaryFormatAdapter implements FormatAdapter {
     private byte[] parseHex(String content) {
         String sanitized = content.replaceAll("[^0-9a-fA-F]", "");
         int length = sanitized.length();
+        if ((length & 1) == 1) {
+            throw new IllegalArgumentException("Hex content must contain an even number of characters");
+        }
         byte[] result = new byte[length / 2];
         for (int i = 0; i < length; i += 2) {
             result[i / 2] = (byte) Integer.parseInt(sanitized.substring(i, i + 2), 16);
