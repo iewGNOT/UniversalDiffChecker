@@ -3,9 +3,13 @@ package com.universaldiff.core.detect;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.universaldiff.core.model.FormatType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -16,6 +20,8 @@ import java.util.Locale;
  * Best-effort detector that combines extension and lightweight content sniffing.
  */
 public class DefaultFileTypeDetector implements FileTypeDetector {
+
+    private static final Logger log = LoggerFactory.getLogger(DefaultFileTypeDetector.class);
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -52,6 +58,7 @@ public class DefaultFileTypeDetector implements FileTypeDetector {
             }
             return new DetectionResult(FormatType.TXT, false);
         } catch (IOException e) {
+            log.warn("Failed to inspect file {} for type detection", path, e);
             return new DetectionResult(FormatType.UNKNOWN, false);
         }
     }
@@ -61,6 +68,7 @@ public class DefaultFileTypeDetector implements FileTypeDetector {
             JsonNode node = objectMapper.readTree(sample);
             return node != null && (node.isObject() || node.isArray());
         } catch (IOException ex) {
+            log.trace("Unable to parse JSON sample during detection: {}", ex.getMessage());
             return false;
         }
     }
@@ -72,7 +80,11 @@ public class DefaultFileTypeDetector implements FileTypeDetector {
             factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
             Document document = factory.newDocumentBuilder().parse(new java.io.ByteArrayInputStream(sample));
             return document != null && document.getDocumentElement() != null;
-        } catch (Exception ex) {
+        } catch (ParserConfigurationException | SAXException ex) {
+            log.debug("XML sniff failed due to parser configuration or malformed XML: {}", ex.getMessage());
+            return false;
+        } catch (IOException ex) {
+            log.debug("XML sniff failed due to I/O error: {}", ex.getMessage());
             return false;
         }
     }

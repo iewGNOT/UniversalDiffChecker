@@ -11,6 +11,8 @@ import com.universaldiff.core.model.MergeDecision;
 import com.universaldiff.core.model.MergeResult;
 import com.universaldiff.core.model.NormalizedContent;
 import com.universaldiff.format.spi.FormatAdapter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -22,6 +24,8 @@ import java.util.Formatter;
 import java.util.List;
 
 public class BinaryFormatAdapter implements FormatAdapter {
+
+    private static final Logger log = LoggerFactory.getLogger(BinaryFormatAdapter.class);
 
     private final FormatType format;
 
@@ -201,6 +205,7 @@ public class BinaryFormatAdapter implements FormatAdapter {
             int length = Integer.parseInt(segments[1]);
             return new Range(offset, length);
         } catch (NumberFormatException ex) {
+            log.debug("Failed to parse binary hunk range from id '{}': {}", hunkId, ex.getMessage());
             return null;
         }
     }

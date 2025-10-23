@@ -1,13 +1,13 @@
 package com.universaldiff.app;
 
 import com.universaldiff.core.model.ComparisonSession;
+import com.universaldiff.core.model.DiffHunk;
 import com.universaldiff.core.model.FormatType;
 import com.universaldiff.core.model.MergeChoice;
 import com.universaldiff.core.model.MergeDecision;
 import com.universaldiff.ui.viewmodel.DiffViewModel;
 import javafx.application.Application;
 import javafx.collections.ListChangeListener;
-import com.universaldiff.core.model.DiffHunk;
 import javafx.geometry.Orientation;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -26,6 +26,8 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -37,6 +39,8 @@ import java.util.List;
 import java.util.Optional;
 
 public class UniversalDiffApp extends Application {
+
+    private static final Logger log = LoggerFactory.getLogger(UniversalDiffApp.class);
 
     private static final int BINARY_BYTES_PER_LINE = 16;
     private static final int TEXT_RENDER_LIMIT = 200_000;
@@ -149,6 +153,8 @@ public class UniversalDiffApp extends Application {
             viewModel.compare();
             renderDiffColumns();
         } catch (IOException ex) {
+            log.error("Comparison failed while reading files {} and {}",
+                    viewModel.leftPathProperty().get(), viewModel.rightPathProperty().get(), ex);
             showError("Comparison failed", ex);
         }
     }
@@ -176,6 +182,7 @@ public class UniversalDiffApp extends Application {
             viewModel.merge(decisions, target.toPath());
             showInfo("Merge completed", "Merged output saved to " + target.toPath());
         } catch (IOException ex) {
+            log.error("Merge failed writing to {}", target.toPath(), ex);
             showError("Merge failed", ex);
         }
     }
@@ -220,6 +227,7 @@ public class UniversalDiffApp extends Application {
                 }
             }
         } catch (IOException ex) {
+            log.error("Failed to render diff columns", ex);
             showError("Render error", ex);
         }
     }

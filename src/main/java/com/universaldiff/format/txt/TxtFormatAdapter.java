@@ -12,6 +12,8 @@ import com.universaldiff.core.model.MergeDecision;
 import com.universaldiff.core.model.MergeResult;
 import com.universaldiff.core.model.NormalizedContent;
 import com.universaldiff.format.spi.FormatAdapter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -21,14 +23,17 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class TxtFormatAdapter implements FormatAdapter {
+
+    private static final Logger log = LoggerFactory.getLogger(TxtFormatAdapter.class);
 
     @Override
     public NormalizedContent normalize(FileDescriptor descriptor) throws IOException {
         Charset encoding = descriptor.getEncoding();
-        List<String> lines = new java.util.ArrayList<>();
-        try (java.util.stream.Stream<String> stream = Files.lines(descriptor.getPath(), encoding)) {
+        List<String> lines = new ArrayList<>();
+        try (Stream<String> stream = Files.lines(descriptor.getPath(), encoding)) {
             stream.map(this::normalizeLine).forEach(lines::add);
         }
         return NormalizedContent.builder(FormatType.TXT)
@@ -137,6 +142,7 @@ public class TxtFormatAdapter implements FormatAdapter {
         try {
             return Integer.parseInt(hunkId.replace("txt-line-", "")) - 1;
         } catch (NumberFormatException ex) {
+            log.debug("Failed to parse text hunk line from id '{}': {}", hunkId, ex.getMessage());
             return -1;
         }
     }

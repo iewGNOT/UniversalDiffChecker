@@ -12,6 +12,8 @@ import com.universaldiff.core.model.MergeDecision;
 import com.universaldiff.core.model.MergeResult;
 import com.universaldiff.core.model.NormalizedContent;
 import com.universaldiff.format.spi.FormatAdapter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -21,6 +23,7 @@ import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
@@ -32,6 +35,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,6 +47,8 @@ import java.util.List;
 import java.util.Map;
 
 public class XmlFormatAdapter implements FormatAdapter {
+
+    private static final Logger log = LoggerFactory.getLogger(XmlFormatAdapter.class);
 
     @Override
     public NormalizedContent normalize(FileDescriptor descriptor) throws IOException {
@@ -60,13 +66,22 @@ public class XmlFormatAdapter implements FormatAdapter {
     }
 
     private Document parse(Path path) throws IOException {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setNamespaceAware(true);
         try {
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            factory.setNamespaceAware(true);
+            factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+        } catch (ParserConfigurationException ex) {
+            throw new XmlProcessingException("XML parser configuration error", ex);
+        }
+        try (InputStream in = Files.newInputStream(path)) {
             DocumentBuilder builder = factory.newDocumentBuilder();
-            return builder.parse(Files.newInputStream(path));
-        } catch (Exception ex) {
-            throw new IOException("Failed to parse XML", ex);
+            return builder.parse(in);
+        } catch (ParserConfigurationException ex) {
+            throw new XmlProcessingException("XML parser configuration error", ex);
+        } catch (org.xml.sax.SAXException ex) {
+            throw new XmlProcessingException("Malformed XML content in " + path, ex);
+        } catch (IOException ex) {
+            throw new XmlProcessingException("I/O error while reading XML from " + path, ex);
         }
     }
 
@@ -212,7 +227,8 @@ public class XmlFormatAdapter implements FormatAdapter {
                 }
             }
         } catch (XPathExpressionException ex) {
-            throw new IOException("Failed to apply XML merge", ex);
+            log.debug("XPath evaluation failed for path '{}' during merge", path, ex);
+            throw new XmlProcessingException("Failed to apply XML merge for path " + path, ex);
         }
     }
 
@@ -230,7 +246,8 @@ public class XmlFormatAdapter implements FormatAdapter {
                 }
             }
         } catch (XPathExpressionException ex) {
-            throw new IOException("Failed to apply manual XML content", ex);
+            log.debug("XPath evaluation failed for manual content at path '{}'", path, ex);
+            throw new XmlProcessingException("Failed to apply manual XML content for path " + path, ex);
         }
     }
 
@@ -251,7 +268,7 @@ public class XmlFormatAdapter implements FormatAdapter {
             transformer.transform(new DOMSource(document), new StreamResult(writer));
             return writer.toString();
         } catch (TransformerException ex) {
-            throw new IOException("Failed to serialize XML", ex);
+            throw new XmlProcessingException("Failed to serialize XML document", ex);
         }
     }
 }
