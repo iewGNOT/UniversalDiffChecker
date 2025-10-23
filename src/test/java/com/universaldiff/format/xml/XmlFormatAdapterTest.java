@@ -65,7 +65,7 @@ class XmlFormatAdapterTest {
 
     @Test
     void normalize_malformedXmlThrowsDomainException() throws Exception {
-        Path invalid = Files.writeString(tempDir.resolve("bad.xml"), "<root><unclosed></root>", StandardCharsets.UTF_8);
+        Path invalid = Files.writeString(tempDir.resolve("bad.xml"), "<root><missing></root>", StandardCharsets.UTF_8);
         XmlFormatAdapter adapter = new XmlFormatAdapter();
 
         assertThatThrownBy(() ->

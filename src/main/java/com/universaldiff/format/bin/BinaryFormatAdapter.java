@@ -145,13 +145,15 @@ public class BinaryFormatAdapter implements FormatAdapter {
                              List<MergeDecision> decisions,
                              Path outputPath) throws IOException {
         Instant start = Instant.now();
-        byte[] merged = left.getBinary().clone();
+        byte[] leftBytes = left.getBinary();
+        byte[] rightBytes = right.getBinary();
+        byte[] merged = java.util.Arrays.copyOf(leftBytes, Math.max(leftBytes.length, rightBytes.length));
         for (MergeDecision decision : decisions) {
             switch (decision.getChoice()) {
                 case TAKE_LEFT -> {
                     // already left, nothing to do
                 }
-                case TAKE_RIGHT -> applyBinaryDecision(merged, right.getBinary(), decision.getHunkId());
+                case TAKE_RIGHT -> applyBinaryDecision(merged, rightBytes, decision.getHunkId());
                 case MANUAL -> applyManualBinary(merged, decision.getHunkId(), decision.getManualContent());
             }
         }
@@ -166,6 +168,7 @@ public class BinaryFormatAdapter implements FormatAdapter {
         if (range == null) {
             return;
         }
+        // Note: the merged buffer is the caller's array; we never grow it here to preserve original length.
         for (int i = 0; i < range.length; i++) {
             int offset = range.offset + i;
             if (offset < target.length && offset < source.length) {
@@ -195,14 +198,16 @@ public class BinaryFormatAdapter implements FormatAdapter {
         if (hunkId == null) {
             return null;
         }
-        String[] segments = hunkId.split("-len-");
-        if (segments.length != 2) {
+        java.util.regex.Matcher matcher = java.util.regex.Pattern
+                .compile("offset-0x([0-9a-fA-F]+)-len-(\\d+)")
+                .matcher(hunkId);
+        if (!matcher.find()) {
+            log.debug("Unrecognized binary hunk id: {}", hunkId);
             return null;
         }
-        String offsetHex = segments[0].replaceAll("[^0-9a-fA-F]", "");
         try {
-            int offset = Integer.parseInt(offsetHex, 16);
-            int length = Integer.parseInt(segments[1]);
+            int offset = Integer.parseInt(matcher.group(1), 16);
+            int length = Integer.parseInt(matcher.group(2));
             return new Range(offset, length);
         } catch (NumberFormatException ex) {
             log.debug("Failed to parse binary hunk range from id '{}': {}", hunkId, ex.getMessage());

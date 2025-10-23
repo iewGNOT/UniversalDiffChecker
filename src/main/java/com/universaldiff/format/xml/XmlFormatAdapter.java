@@ -78,6 +78,9 @@ public class XmlFormatAdapter implements FormatAdapter {
             return builder.parse(in);
         } catch (ParserConfigurationException ex) {
             throw new XmlProcessingException("XML parser configuration error", ex);
+        } catch (org.xml.sax.SAXParseException ex) {
+            throw new XmlProcessingException("Malformed XML at line " + ex.getLineNumber()
+                    + ", column " + ex.getColumnNumber() + ": " + ex.getMessage(), ex);
         } catch (org.xml.sax.SAXException ex) {
             throw new XmlProcessingException("Malformed XML content in " + path, ex);
         } catch (IOException ex) {
