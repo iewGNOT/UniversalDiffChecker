@@ -11,16 +11,7 @@ Universal Difference Checker is a Java 17 / JavaFX desktop application designed 
   - JSON: canonical JSON pointer diff with optional key-order ignore.
   - XML: XPath-driven diff for elements, attributes, and text nodes.
 - Two-pane preview UI with diff list, detail viewer, and merge action using configurable merge strategy.
-- Export pipeline that saves merged output in the source encoding and produces diff-friendly summaries.
-
-## Project Structure
-`
-src/main/java
-universaldiff.app               # JavaFX entry point and UI composition
-com.universaldiff.core          # Comparison service, detection, IO helpers
-com.universaldiff.format        # Format adapters (TXT, BIN, CSV, JSON, XML)
-com.universaldiff.ui            # View models powering the UI
-`
+- Export pipeline that saves merged output in the source encoding and produces diff-friendly summaries.`
 
 ## Getting Started
 ### Prerequisites
