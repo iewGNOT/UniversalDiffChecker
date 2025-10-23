@@ -44,3 +44,4 @@ public final class CsvTable {
         return rows.size();
     }
 }
+

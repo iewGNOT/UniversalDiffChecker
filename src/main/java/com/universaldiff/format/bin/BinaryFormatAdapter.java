@@ -7,7 +7,6 @@ import com.universaldiff.core.model.DiffSide;
 import com.universaldiff.core.model.DiffType;
 import com.universaldiff.core.model.FileDescriptor;
 import com.universaldiff.core.model.FormatType;
-import com.universaldiff.core.model.MergeChoice;
 import com.universaldiff.core.model.MergeDecision;
 import com.universaldiff.core.model.MergeResult;
 import com.universaldiff.core.model.NormalizedContent;
@@ -208,3 +207,4 @@ public class BinaryFormatAdapter implements FormatAdapter {
 
     private record Range(int offset, int length) {}
 }
+

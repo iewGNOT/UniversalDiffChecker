@@ -13,13 +13,13 @@ import com.universaldiff.core.model.DiffSide;
 import com.universaldiff.core.model.DiffType;
 import com.universaldiff.core.model.FileDescriptor;
 import com.universaldiff.core.model.FormatType;
-import com.universaldiff.core.model.MergeChoice;
 import com.universaldiff.core.model.MergeDecision;
 import com.universaldiff.core.model.MergeResult;
 import com.universaldiff.core.model.NormalizedContent;
 import com.universaldiff.format.spi.FormatAdapter;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -160,8 +159,12 @@ public class JsonFormatAdapter implements FormatAdapter {
                              List<MergeDecision> decisions,
                              Path outputPath) throws IOException {
         Instant start = Instant.now();
-        ObjectNode merged = left.getNativeModel().deepCopy();
-        JsonNode rightRoot = right.getNativeModel();
+        JsonNode leftRoot = (JsonNode) left.getNativeModel();
+        if (!(leftRoot instanceof ObjectNode objectRoot)) {
+            throw new IOException("JSON merge currently supports object roots only");
+        }
+        ObjectNode merged = objectRoot.deepCopy();
+        JsonNode rightRoot = (JsonNode) right.getNativeModel();
         for (MergeDecision decision : decisions) {
             String pointerEncoded = decision.getHunkId().replace("json-path-", "");
             String pointer = decode(pointerEncoded);
@@ -244,5 +247,12 @@ public class JsonFormatAdapter implements FormatAdapter {
         }
     }
 }
+
+
+
+
+
+
+
 
 

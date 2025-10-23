@@ -18,6 +18,8 @@ import org.apache.commons.csv.CSVRecord;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -140,8 +142,19 @@ public class CsvFormatAdapter implements FormatAdapter {
         return new DiffResult(FormatType.CSV, hunks, Duration.between(start, Instant.now()));
     }
 
-    private String sanitizeKey(String key) {
-        return key == null ? "unknown" : key.replaceAll("[^a-zA-Z0-9]", "_");
+    private String encodeKey(String key) {
+        if (key == null) {
+            return Base64.getEncoder().encodeToString("<null>".getBytes(StandardCharsets.UTF_8));
+        }
+        return Base64.getEncoder().encodeToString(key.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private String decodeKey(String encoded) {
+        if (encoded == null || encoded.isBlank()) {
+            return "";
+        }
+        String decoded = new String(Base64.getDecoder().decode(encoded), StandardCharsets.UTF_8);
+        return "<null>".equals(decoded) ? "" : decoded;
     }
 
     private int determineKeyIndex(CsvTable left, CsvTable right) {
@@ -186,6 +199,7 @@ public class CsvFormatAdapter implements FormatAdapter {
                              NormalizedContent right,
                              List<MergeDecision> decisions,
                              Path outputPath) throws IOException {
+        Instant start = Instant.now();
         CsvTable leftTable = (CsvTable) left.getNativeModel();
         CsvTable rightTable = (CsvTable) right.getNativeModel();
         int keyIndex = determineKeyIndex(leftTable, rightTable);
@@ -227,6 +241,7 @@ public class CsvFormatAdapter implements FormatAdapter {
         String[] parts = manualContent.split("\\|");
         List<String> row = new ArrayList<>();
         for (String part : parts) {
+            part = part.trim();
             String[] kv = part.split("=", 2);
             String value = kv.length == 2 ? kv[1].trim() : kv[0].trim();
             row.add(value);
@@ -249,6 +264,15 @@ public class CsvFormatAdapter implements FormatAdapter {
         return String.join(",", escaped);
     }
 }
+
+
+
+
+
+
+
+
+
 
 
 

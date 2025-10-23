@@ -141,3 +141,4 @@ public class TxtFormatAdapter implements FormatAdapter {
         }
     }
 }
+

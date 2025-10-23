@@ -255,3 +255,4 @@ public class XmlFormatAdapter implements FormatAdapter {
         }
     }
 }
+
