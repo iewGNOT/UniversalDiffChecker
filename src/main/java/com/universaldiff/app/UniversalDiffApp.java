@@ -379,7 +379,7 @@ public class UniversalDiffApp extends Application {
         HBox row = new HBox();
         row.getStyleClass().addAll("diff-row", "truncated-row");
 
-        Label marker = new Label("бн");
+        Label marker = new Label("\u2026");
         marker.getStyleClass().add("diff-line-number");
 
         String unit = binary ? "bytes" : "characters";
