@@ -1,5 +1,3 @@
-//this is a comment
-
 package com.universaldiff.app;
 
 import com.universaldiff.core.model.ComparisonSession;
