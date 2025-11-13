@@ -67,4 +67,46 @@ class TxtFormatAdapterTest {
         assertThat(Files.readAllLines(output))
                 .containsExactlyElementsOf(Files.readAllLines(right));
     }
+
+    @Test
+    void diff_reportsDeletesWhenRightIsShorter() {
+        TxtFormatAdapter adapter = new TxtFormatAdapter();
+        NormalizedContent left = NormalizedContent.builder(FormatType.TXT)
+                .logicalRecords(List.of("one", "two"))
+                .build();
+        NormalizedContent right = NormalizedContent.builder(FormatType.TXT)
+                .logicalRecords(List.of("one"))
+                .build();
+
+        DiffResult diff = adapter.diff(left, right);
+
+        assertThat(diff.getHunks())
+                .extracting(DiffHunk::getType)
+                .contains(DiffType.DELETE);
+    }
+
+    @Test
+    void merge_appliesManualEditsAndIgnoresInvalidIds() throws Exception {
+        TxtFormatAdapter adapter = new TxtFormatAdapter();
+        NormalizedContent left = NormalizedContent.builder(FormatType.TXT)
+                .logicalRecords(List.of("L1", "L2"))
+                .encoding(StandardCharsets.UTF_8)
+                .build();
+        NormalizedContent right = NormalizedContent.builder(FormatType.TXT)
+                .logicalRecords(List.of("R1", "R2", "R3"))
+                .encoding(StandardCharsets.UTF_8)
+                .build();
+
+        List<MergeDecision> decisions = List.of(
+                new MergeDecision("txt-line-1", MergeChoice.TAKE_RIGHT, null),
+                new MergeDecision("txt-line-3", MergeChoice.MANUAL, "manual"),
+                new MergeDecision("bad-id", MergeChoice.MANUAL, "ignored")
+        );
+
+        Path output = tempDir.resolve("manual.txt");
+        adapter.merge(left, right, decisions, output);
+
+        assertThat(Files.readAllLines(output, StandardCharsets.UTF_8))
+                .containsExactly("R1", "L2", "manual");
+    }
 }

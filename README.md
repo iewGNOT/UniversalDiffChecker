@@ -32,6 +32,11 @@ The javafx:run goal launches the Universal Difference Checker UI. Use the toolba
 ### Testing
 Placeholder unit test scaffolding is ready under src/test/java. Add format-specific regression suites as adapters evolve.
 
+## Code Coverage (JaCoCo)
+Run `mvn clean test` to execute the JUnit suites with the JaCoCo Java agent attached. The agent instruments bytecode on the fly, records which instructions and branches execute, and writes the results to `target/jacoco.exec`. Running `mvn verify` (or `mvn jacoco:report` after a test run) generates both HTML and XML coverage reports under `target/site/jacoco`; open `target/site/jacoco/index.html` in any browser to drill into packages, classes, and line-by-line highlights. The XML file (`target/site/jacoco/jacoco.xml`) is available for tooling such as SonarQube.
+
+JaCoCo tracks instruction (bytecode), line, and branch coverage. The `jacoco:check` goal enforces minimum ratios (80% line, 70% branch by default) and will fail `mvn verify` if the thresholds are not met, keeping regressions visible in CI. Adjust the limits in `pom.xml` if different targets are required.
+
 ## Extending UDC
 - Adapters implement the FormatAdapter SPI. New formats can be registered by implementing normalization, diff, and merge behavior and adding them to the FormatAdapterRegistry.
 - ComparisonService.createDefault(boolean ignoreJsonKeyOrder) centralizes adapter wiring. Override or extend this factory to plug in additional capabilities or alternate heuristics.

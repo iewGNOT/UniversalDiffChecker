@@ -35,4 +35,15 @@ class BomEncodingDetectorTest {
 
         assertThat(charset).isEqualTo(StandardCharsets.UTF_8);
     }
+
+    @Test
+    void detectsUtf8BomSequence() throws Exception {
+        Path file = tempDir.resolve("utf8bom.txt");
+        Files.write(file, new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF, 'x'});
+
+        EncodingDetector detector = new BomEncodingDetector();
+        Charset charset = detector.detect(file);
+
+        assertThat(charset).isEqualTo(StandardCharsets.UTF_8);
+    }
 }

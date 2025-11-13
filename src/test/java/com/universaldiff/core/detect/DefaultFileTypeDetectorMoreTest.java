@@ -70,4 +70,66 @@ class DefaultFileTypeDetectorMoreTest {
         assertThat(detector.detect(directory)).isEqualTo(StandardCharsets.UTF_8);
         assertThat(detector.detect(null)).isEqualTo(StandardCharsets.UTF_8);
     }
+
+    @Test
+    void directoryOrNonRegularFilesReportUnknown() throws Exception {
+        Path directory = Files.createDirectory(tempDir.resolve("folder"));
+
+        DefaultFileTypeDetector detector = new DefaultFileTypeDetector();
+        FileTypeDetector.DetectionResult result = detector.detect(directory);
+
+        assertThat(result.getFormatType()).isEqualTo(FormatType.UNKNOWN);
+        assertThat(result.isConfident()).isFalse();
+    }
+
+    @Test
+    void nullPathReturnsUnknown() {
+        DefaultFileTypeDetector detector = new DefaultFileTypeDetector();
+        FileTypeDetector.DetectionResult result = detector.detect(null);
+
+        assertThat(result.getFormatType()).isEqualTo(FormatType.UNKNOWN);
+        assertThat(result.isConfident()).isFalse();
+    }
+
+    @Test
+    void fileWithoutExtensionStillDetectsByContent() throws Exception {
+        Path file = Files.writeString(tempDir.resolve("README"), "{\"flag\":1}", StandardCharsets.UTF_8);
+
+        DefaultFileTypeDetector detector = new DefaultFileTypeDetector();
+        assertThat(detector.detect(file).getFormatType()).isEqualTo(FormatType.JSON);
+    }
+
+    @Test
+    void scalarJsonContentFallsBackToText() throws Exception {
+        Path scalar = Files.writeString(tempDir.resolve("scalar"), "\"value\"", StandardCharsets.UTF_8);
+
+        DefaultFileTypeDetector detector = new DefaultFileTypeDetector();
+        FileTypeDetector.DetectionResult result = detector.detect(scalar);
+
+        assertThat(result.getFormatType()).isEqualTo(FormatType.TXT);
+        assertThat(result.isConfident()).isFalse();
+    }
+
+    @Test
+    void csvHeuristicNeedsEnoughDelimiters() throws Exception {
+        Path sparse = Files.writeString(tempDir.resolve("sparse.data"), ",\n\n", StandardCharsets.UTF_8);
+
+        DefaultFileTypeDetector detector = new DefaultFileTypeDetector();
+        FileTypeDetector.DetectionResult result = detector.detect(sparse);
+
+        assertThat(result.getFormatType()).isEqualTo(FormatType.TXT);
+    }
+
+    @Test
+    void highBitBytesTriggerBinaryDetection() throws Exception {
+        Path bin = tempDir.resolve("high.bin");
+        Files.write(bin, new byte[]{(byte) 0x80, (byte) 0x90});
+
+        DefaultFileTypeDetector detector = new DefaultFileTypeDetector();
+        assertThat(detector.detect(bin).getFormatType()).isEqualTo(FormatType.BIN);
+    }
 }
+
+
+
+

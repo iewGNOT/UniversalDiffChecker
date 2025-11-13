@@ -96,6 +96,31 @@ class CsvFormatAdapterTest {
                 .allSatisfy(fragment -> assertThat(fragment.getContent()).contains("col1"));
     }
 
+    @Test
+    void merge_manualContentIsParsedAndPadded() throws Exception {
+        String leftCsv = "id,name,notes\n1,Alpha,old\n";
+        String rightCsv = "id,name,notes\n1,Beta,new\n";
+        Path left = Files.writeString(tempDir.resolve("manual-left.csv"), leftCsv, StandardCharsets.UTF_8);
+        Path right = Files.writeString(tempDir.resolve("manual-right.csv"), rightCsv, StandardCharsets.UTF_8);
+        Path output = tempDir.resolve("manual-output.csv");
+
+        CsvFormatAdapter adapter = new CsvFormatAdapter();
+        NormalizedContent leftContent = adapter.normalize(new FileDescriptor(left, FormatType.CSV, StandardCharsets.UTF_8));
+        NormalizedContent rightContent = adapter.normalize(new FileDescriptor(right, FormatType.CSV, StandardCharsets.UTF_8));
+        DiffResult diff = adapter.diff(leftContent, rightContent);
+
+        MergeDecision manual = new MergeDecision(
+                diff.getHunks().get(0).getId(),
+                MergeChoice.MANUAL,
+                "id=1 | name=ManualOnly" // intentionally omit notes value
+        );
+
+        adapter.merge(leftContent, rightContent, List.of(manual), output);
+
+        assertThat(Files.readAllLines(output, StandardCharsets.UTF_8))
+                .containsExactly("id,name,notes", "1,ManualOnly,");
+    }
+
     private String decodeKey(String hunkId) {
         String encoded = hunkId.replace("csv-row-", "");
         return new String(Base64.getDecoder().decode(encoded), StandardCharsets.UTF_8);

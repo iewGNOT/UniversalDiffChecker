@@ -72,4 +72,48 @@ class XmlFormatAdapterTest {
                 adapter.normalize(new FileDescriptor(invalid, FormatType.XML, StandardCharsets.UTF_8)))
                 .isInstanceOf(XmlProcessingException.class);
     }
+
+    @Test
+    void merge_takeRightHandlesAttributesAndNewElements() throws Exception {
+        Path left = Files.writeString(tempDir.resolve("left-attr.xml"),
+                "<root><item id=\"a\">old</item><extra>false</extra></root>", StandardCharsets.UTF_8);
+        Path right = Files.writeString(tempDir.resolve("right-attr.xml"),
+                "<root><item id=\"b\">new</item><extra>true</extra></root>", StandardCharsets.UTF_8);
+        Path output = tempDir.resolve("attr-merged.xml");
+
+        XmlFormatAdapter adapter = new XmlFormatAdapter();
+        NormalizedContent leftContent = adapter.normalize(new FileDescriptor(left, FormatType.XML, StandardCharsets.UTF_8));
+        NormalizedContent rightContent = adapter.normalize(new FileDescriptor(right, FormatType.XML, StandardCharsets.UTF_8));
+        DiffResult diff = adapter.diff(leftContent, rightContent);
+
+        List<MergeDecision> decisions = diff.getHunks().stream()
+                .map(h -> new MergeDecision(h.getId(), MergeChoice.TAKE_RIGHT, null))
+                .collect(Collectors.toList());
+
+        adapter.merge(leftContent, rightContent, decisions, output);
+
+        String merged = Files.readString(output, StandardCharsets.UTF_8);
+        assertThat(merged).contains("id=\"b\"")
+                .contains("<item id=\"b\">new</item>")
+                .contains("<extra>true</extra>");
+    }
+
+    @Test
+    void merge_manualOverrideChangesTextContent() throws Exception {
+        Path left = Files.writeString(tempDir.resolve("left-manual.xml"),
+                "<root><value>left</value></root>", StandardCharsets.UTF_8);
+        Path right = Files.writeString(tempDir.resolve("right-manual.xml"),
+                "<root><value>right</value></root>", StandardCharsets.UTF_8);
+        Path output = tempDir.resolve("manual-merged.xml");
+
+        XmlFormatAdapter adapter = new XmlFormatAdapter();
+        NormalizedContent leftContent = adapter.normalize(new FileDescriptor(left, FormatType.XML, StandardCharsets.UTF_8));
+        NormalizedContent rightContent = adapter.normalize(new FileDescriptor(right, FormatType.XML, StandardCharsets.UTF_8));
+        DiffResult diff = adapter.diff(leftContent, rightContent);
+
+        MergeDecision manual = new MergeDecision(diff.getHunks().get(0).getId(), MergeChoice.MANUAL, "custom");
+        adapter.merge(leftContent, rightContent, List.of(manual), output);
+
+        assertThat(Files.readString(output, StandardCharsets.UTF_8)).contains("<value>custom</value>");
+    }
 }

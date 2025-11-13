@@ -12,11 +12,13 @@ import com.universaldiff.core.model.NormalizedContent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class BinaryFormatAdapterTest {
 
@@ -86,5 +88,16 @@ class BinaryFormatAdapterTest {
 
         assertThat(result.getOutputPath()).isEqualTo(output);
         assertThat(Files.readAllBytes(output)).containsExactly(Files.readAllBytes(right));
+    }
+
+    @Test
+    void hexNormalizationRejectsOddLengthInput() throws Exception {
+        Path hex = Files.writeString(tempDir.resolve("odd.hex"), "0A0", StandardCharsets.UTF_8);
+        BinaryFormatAdapter adapter = new BinaryFormatAdapter(FormatType.HEX);
+
+        assertThatThrownBy(() ->
+                adapter.normalize(new FileDescriptor(hex, FormatType.HEX, StandardCharsets.UTF_8)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("even number");
     }
 }
