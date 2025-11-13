@@ -13,6 +13,8 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
+
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -59,18 +61,52 @@ public class DiffViewModel {
         return hunks;
     }
 
-    public void compare() throws IOException {
-        Path left = leftPath.get();
-        Path right = rightPath.get();
-        if (left == null || right == null) {
-            throw new IOException("Both files must be selected");
-        }
-        ensureExists(left);
-        ensureExists(right);
-        currentSession = comparisonService.compare(left, right, ComparisonOptions.builder().build());
-        DiffResult diffResult = currentSession.getDiffResult();
-        hunks.setAll(diffResult.getHunks());
+    private final BooleanProperty busy = new SimpleBooleanProperty(false);
+
+    public BooleanProperty busyProperty() {
+        return busy;
     }
+
+
+    public void compare() throws IOException {
+    Path left = leftPath.get();
+    Path right = rightPath.get();
+    if (left == null || right == null) {
+        throw new IOException("Both files must be selected");
+    }
+    ensureExists(left);
+    ensureExists(right);
+
+    busy.set(true);
+
+    Task<ComparisonSession> task = new Task<>() {
+        @Override
+        protected ComparisonSession call() throws Exception {
+            return comparisonService.compare(left, right, ComparisonOptions.builder().build());
+        }
+    };
+    task.setOnSucceeded(evt -> {
+        busy.set(false);
+        currentSession = task.getValue();
+        if (currentSession != null) {
+            DiffResult diffResult = currentSession.getDiffResult();
+            hunks.setAll(diffResult.getHunks());
+        } else {
+            hunks.clear();
+        }
+    });
+
+    task.setOnFailed(evt -> {
+        busy.set(false);
+        Throwable ex = task.getException();
+        ex.printStackTrace();
+    });
+
+    Thread t = new Thread(task, "diff-compare-task");
+    t.setDaemon(true); 
+    t.start();
+}
+
 
     public List<String> readFilePreview(Path path) throws IOException {
         return Files.readAllLines(path);
