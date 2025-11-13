@@ -24,7 +24,8 @@ class DiffViewModelTest {
         viewModel.leftPathProperty().set(left);
         viewModel.rightPathProperty().set(right);
 
-        viewModel.compare();
+        // 使用同步版本，调用结束时结果已经准备好
+        viewModel.compareBlockingForTest();
 
         assertThat(viewModel.getCurrentSession()).isPresent();
         assertThat(viewModel.hunksProperty())
@@ -32,3 +33,6 @@ class DiffViewModelTest {
                 .containsExactlyInAnyOrder("txt-line-2", "txt-line-4");
     }
 }
+
+
+

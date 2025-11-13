@@ -28,14 +28,16 @@ class DiffViewModelJsonOrderTest {
         viewModel.leftPathProperty().set(left);
         viewModel.rightPathProperty().set(rightOrder);
 
-        viewModel.compare();
+        viewModel.compareBlockingForTest();
         assertThat(viewModel.hunksProperty()).isEmpty();
 
         viewModel.ignoreJsonKeyOrderProperty().set(false);
-        String rightJsonChanged = "{\"outer\":{\"first\":{\"b\":2,\"a\":1},\"second\":{\"y\":false,\"x\":true,\"extra\":1}}}";
+        String rightJsonChanged =
+                "{\"outer\":{\"first\":{\"b\":2,\"a\":1},\"second\":{\"y\":false,\"x\":true,\"extra\":1}}}";
         Path rightChanged = Files.writeString(tempDir.resolve("right-changed.json"), rightJsonChanged, StandardCharsets.UTF_8);
         viewModel.rightPathProperty().set(rightChanged);
-        viewModel.compare();
+
+        viewModel.compareBlockingForTest();
         assertThat(viewModel.hunksProperty()).isNotEmpty();
         assertThat(viewModel.hunksProperty())
                 .extracting(DiffHunk::getId)
@@ -50,11 +52,17 @@ class DiffViewModelJsonOrderTest {
         DiffViewModel viewModel = new DiffViewModel();
         viewModel.leftPathProperty().set(left);
         viewModel.rightPathProperty().set(right);
-        viewModel.compare();
+
+        viewModel.compareBlockingForTest();
         assertThat(viewModel.hunksProperty()).isNotEmpty();
 
         viewModel.rightPathProperty().set(tempDir.resolve("missing.txt"));
-        assertThatThrownBy(viewModel::compare).isInstanceOf(IOException.class);
+
+        assertThatThrownBy(viewModel::compareBlockingForTest).isInstanceOf(IOException.class);
+
         assertThat(viewModel.hunksProperty()).isNotEmpty();
     }
 }
+
+
+

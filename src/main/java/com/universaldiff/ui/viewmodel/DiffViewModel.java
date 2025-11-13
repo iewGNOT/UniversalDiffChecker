@@ -106,6 +106,23 @@ public class DiffViewModel {
     t.setDaemon(true); 
     t.start();
 }
+    void compareBlockingForTest() throws IOException {
+        Path left = leftPath.get();
+        Path right = rightPath.get();
+        if (left == null || right == null) {
+            throw new IOException("Both files must be selected");
+        }
+        ensureExists(left);
+        ensureExists(right);
+
+        // 这里就是原来同步 compare 的老逻辑
+        currentSession = comparisonService.compare(
+                left,
+                right,
+                ComparisonOptions.builder().build());
+        DiffResult diffResult = currentSession.getDiffResult();
+        hunks.setAll(diffResult.getHunks());
+    }
 
 
     public List<String> readFilePreview(Path path) throws IOException {
