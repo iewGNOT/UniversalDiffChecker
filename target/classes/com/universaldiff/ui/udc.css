@@ -1,0 +1,174 @@
+.root {
+    -fx-font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+    -fx-font-size: 13px;
+}
+
+.tool-bar {
+    -fx-padding: 6px 10px;
+    -fx-spacing: 8px;
+}
+
+.diff-column-scroll {
+    -fx-background-color: transparent;
+}
+
+.diff-column {
+    -fx-padding: 16px 24px;
+    -fx-spacing: 12px;
+}
+
+.diff-column-header {
+    -fx-font-size: 18px;
+    -fx-font-weight: 700;
+}
+
+.diff-row {
+    -fx-padding: 6px 10px;
+    -fx-spacing: 12px;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-alignment: center-left;
+}
+
+.diff-row-left {
+    -fx-background-color: transparent;
+    -fx-border-width: 0 0 0 3px;
+    -fx-border-color: rgba(244, 67, 54, 0.45);
+}
+
+.diff-row-right {
+    -fx-background-color: transparent;
+    -fx-border-width: 0 3px 0 0;
+    -fx-border-color: rgba(76, 175, 80, 0.45);
+}
+
+.diff-line-number {
+    -fx-font-family: "Consolas", "SFMono-Regular", monospace;
+    -fx-text-fill: rgba(60, 60, 60, 0.85);
+    -fx-background-color: rgba(0, 0, 0, 0.08);
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 2px 8px;
+}
+
+.diff-text-flow {
+    -fx-font-family: "Consolas", "SFMono-Regular", monospace;
+    -fx-line-spacing: 2px;
+}
+
+.text.diff-text-normal {
+    -fx-fill: -fx-text-base-color;
+}
+
+.label.diff-text-highlight {
+    -fx-padding: 0 2px;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-font-weight: 600;
+}
+
+.label.diff-text-highlight.diff-delta-left {
+    -fx-background-color: rgba(244, 67, 54, 0.35);
+    -fx-border-color: rgba(244, 67, 54, 0.45);
+    -fx-border-width: 1;
+    -fx-text-fill: -fx-text-base-color;
+}
+
+.label.diff-text-highlight.diff-delta-right {
+    -fx-background-color: rgba(76, 175, 80, 0.35);
+    -fx-border-color: rgba(76, 175, 80, 0.45);
+    -fx-border-width: 1;
+    -fx-text-fill: -fx-text-base-color;
+}
+
+/* Binary view */
+.binary-row-left {
+    -fx-background-color: transparent;
+    -fx-border-width: 0 0 0 3px;
+    -fx-border-color: rgba(244, 67, 54, 0.45);
+}
+
+.binary-row-right {
+    -fx-background-color: transparent;
+    -fx-border-width: 0 3px 0 0;
+    -fx-border-color: rgba(76, 175, 80, 0.45);
+}
+
+.binary-offset {
+    -fx-font-family: "Consolas", "SFMono-Regular", monospace;
+    -fx-text-fill: rgba(60, 60, 60, 0.9);
+    -fx-padding: 0 16px 0 0;
+}
+
+.binary-hex-flow {
+    -fx-font-family: "Consolas", "SFMono-Regular", monospace;
+    -fx-padding: 0 16px 0 0;
+    -fx-line-spacing: 2px;
+}
+
+.binary-hex-byte {
+    -fx-padding: 0 6px 0 0;
+}
+
+.binary-hex-byte-diff-left {
+    -fx-background-color: rgba(244, 67, 54, 0.35);
+    -fx-border-color: rgba(244, 67, 54, 0.45);
+    -fx-border-width: 1;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+}
+
+.binary-hex-byte-diff-right {
+    -fx-background-color: rgba(76, 175, 80, 0.35);
+    -fx-border-color: rgba(76, 175, 80, 0.45);
+    -fx-border-width: 1;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+}
+
+.binary-ascii-flow {
+    -fx-font-family: "Consolas", "SFMono-Regular", monospace;
+    -fx-line-spacing: 2px;
+}
+
+.binary-ascii-char {
+    -fx-padding: 0 3px 0 0;
+}
+
+.binary-ascii-char-diff-left {
+    -fx-background-color: rgba(244, 67, 54, 0.35);
+    -fx-border-color: rgba(244, 67, 54, 0.45);
+    -fx-border-width: 1;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+}
+
+.binary-ascii-char-diff-right {
+    -fx-background-color: rgba(76, 175, 80, 0.35);
+    -fx-border-color: rgba(76, 175, 80, 0.45);
+    -fx-border-width: 1;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+}
+
+.truncated-row {
+    -fx-background-color: rgba(0, 0, 0, 0.04);
+}
+
+.truncated-message {
+    -fx-text-fill: rgba(60, 60, 60, 0.85);
+    -fx-padding: 0 0 0 12px;
+}
+
+.diff-row-neutral {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-border-color: transparent;
+}
+
+.binary-row-neutral {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-border-color: transparent;
+}
+

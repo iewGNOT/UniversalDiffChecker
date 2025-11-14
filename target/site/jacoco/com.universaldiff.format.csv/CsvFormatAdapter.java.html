@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CsvFormatAdapter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Universal Difference Checker</a> &gt; <a href="index.source.html" class="el_package">com.universaldiff.format.csv</a> &gt; <span class="el_source">CsvFormatAdapter.java</span></div><h1>CsvFormatAdapter.java</h1><pre class="source lang-java linenums">package com.universaldiff.format.csv;
+
+import com.universaldiff.core.model.DiffFragment;
+import com.universaldiff.core.model.DiffHunk;
+import com.universaldiff.core.model.DiffResult;
+import com.universaldiff.core.model.DiffSide;
+import com.universaldiff.core.model.DiffType;
+import com.universaldiff.core.model.FileDescriptor;
+import com.universaldiff.core.model.FormatType;
+import com.universaldiff.core.model.MergeChoice;
+import com.universaldiff.core.model.MergeDecision;
+import com.universaldiff.core.model.MergeResult;
+import com.universaldiff.core.model.NormalizedContent;
+import com.universaldiff.format.spi.FormatAdapter;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
+<span class="fc" id="L35">public class CsvFormatAdapter implements FormatAdapter {</span>
+
+    @Override
+    public NormalizedContent normalize(FileDescriptor descriptor) throws IOException {
+<span class="fc" id="L39">        CsvTable table = parseTable(descriptor.getPath(), descriptor.getEncoding());</span>
+<span class="fc" id="L40">        List&lt;String&gt; logical = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        for (int i = 0; i &lt; table.size(); i++) {</span>
+<span class="fc" id="L42">            logical.add(table.formatRow(i));</span>
+        }
+<span class="fc" id="L44">        return NormalizedContent.builder(FormatType.CSV)</span>
+<span class="fc" id="L45">                .logicalRecords(logical)</span>
+<span class="fc" id="L46">                .nativeModel(table)</span>
+<span class="fc" id="L47">                .encoding(descriptor.getEncoding())</span>
+<span class="fc" id="L48">                .build();</span>
+    }
+
+    private CsvTable parseTable(Path path, java.nio.charset.Charset encoding) throws IOException {
+<span class="fc" id="L52">        CSVFormat format = CSVFormat.DEFAULT.builder()</span>
+<span class="fc" id="L53">                .setTrim(true)</span>
+<span class="fc" id="L54">                .setSkipHeaderRecord(false)</span>
+<span class="fc" id="L55">                .setIgnoreSurroundingSpaces(true)</span>
+<span class="fc" id="L56">                .build();</span>
+<span class="fc" id="L57">        try (Reader reader = Files.newBufferedReader(path, encoding);</span>
+<span class="fc" id="L58">             CSVParser parser = new CSVParser(reader, format)) {</span>
+<span class="fc" id="L59">            List&lt;CSVRecord&gt; records = parser.getRecords();</span>
+<span class="fc" id="L60">            List&lt;String&gt; headers = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L61">            int startIndex = 0;</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">            if (!records.isEmpty()) {</span>
+<span class="fc" id="L63">                CSVRecord first = records.get(0);</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">                if (looksLikeHeader(first)) {</span>
+<span class="fc" id="L65">                    headers.addAll(first.stream().map(String::trim).toList());</span>
+<span class="fc" id="L66">                    startIndex = 1;</span>
+                }
+            }
+<span class="pc bpc" id="L69" title="1 of 4 branches missed.">            if (headers.isEmpty() &amp;&amp; !records.isEmpty()) {</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">                for (int i = 0; i &lt; records.get(0).size(); i++) {</span>
+<span class="fc" id="L71">                    headers.add(&quot;col&quot; + (i + 1));</span>
+                }
+            }
+<span class="fc" id="L74">            List&lt;List&lt;String&gt;&gt; rows = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">            for (int i = startIndex; i &lt; records.size(); i++) {</span>
+<span class="fc" id="L76">                CSVRecord record = records.get(i);</span>
+<span class="fc" id="L77">                List&lt;String&gt; row = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">                for (int c = 0; c &lt; headers.size(); c++) {</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">                    row.add(record.size() &gt; c ? record.get(c).trim() : &quot;&quot;);</span>
+                }
+<span class="fc" id="L81">                rows.add(row);</span>
+            }
+<span class="fc" id="L83">            return new CsvTable(headers, rows);</span>
+        }
+    }
+
+    private boolean looksLikeHeader(CSVRecord record) {
+<span class="fc bfc" id="L88" title="All 2 branches covered.">        for (String value : record) {</span>
+<span class="pc bpc" id="L89" title="2 of 4 branches missed.">            if (value == null || value.isBlank()) {</span>
+<span class="nc" id="L90">                return false;</span>
+            }
+<span class="fc bfc" id="L92" title="All 2 branches covered.">            if (value.chars().anyMatch(Character::isDigit)) {</span>
+<span class="fc" id="L93">                return false;</span>
+            }
+        }
+<span class="fc" id="L96">        return true;</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    public DiffResult diff(NormalizedContent left, NormalizedContent right) {
+<span class="fc" id="L102">        Instant start = Instant.now();</span>
+<span class="fc" id="L103">        CsvTable leftTable = (CsvTable) left.getNativeModel();</span>
+<span class="fc" id="L104">        CsvTable rightTable = (CsvTable) right.getNativeModel();</span>
+<span class="fc" id="L105">        int keyIndex = determineKeyIndex(leftTable, rightTable);</span>
+
+<span class="fc" id="L107">        Map&lt;String, List&lt;String&gt;&gt; leftMap = indexTable(leftTable, keyIndex);</span>
+<span class="fc" id="L108">        Map&lt;String, List&lt;String&gt;&gt; rightMap = indexTable(rightTable, keyIndex);</span>
+<span class="fc" id="L109">        Set&lt;String&gt; keys = new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L110">        keys.addAll(leftMap.keySet());</span>
+<span class="fc" id="L111">        keys.addAll(rightMap.keySet());</span>
+
+<span class="fc" id="L113">        List&lt;DiffHunk&gt; hunks = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        for (String key : keys) {</span>
+<span class="fc" id="L115">            List&lt;String&gt; leftRow = leftMap.get(key);</span>
+<span class="fc" id="L116">            List&lt;String&gt; rightRow = rightMap.get(key);</span>
+<span class="pc bpc" id="L117" title="1 of 4 branches missed.">            if (leftRow != null &amp;&amp; rightRow != null) {</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">                if (!leftRow.equals(rightRow)) {</span>
+<span class="fc" id="L119">                    hunks.add(DiffHunk.of(</span>
+<span class="fc" id="L120">                            &quot;csv-row-&quot; + encodeKey(key),</span>
+<span class="fc" id="L121">                            DiffType.MODIFY,</span>
+<span class="fc" id="L122">                            &quot;Row &quot; + key,</span>
+<span class="fc" id="L123">                            List.of(</span>
+<span class="fc" id="L124">                                    new DiffFragment(DiffSide.LEFT, 0, leftRow.size() - 1, renderRow(leftTable, leftRow)),</span>
+<span class="fc" id="L125">                                    new DiffFragment(DiffSide.RIGHT, 0, rightRow.size() - 1, renderRow(rightTable, rightRow))</span>
+                            )));
+                }
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">            } else if (leftRow == null) {</span>
+<span class="fc" id="L129">                hunks.add(DiffHunk.of(</span>
+<span class="fc" id="L130">                        &quot;csv-row-&quot; + encodeKey(key),</span>
+<span class="fc" id="L131">                        DiffType.INSERT,</span>
+<span class="fc" id="L132">                        &quot;Insert row &quot; + key,</span>
+<span class="fc" id="L133">                        List.of(new DiffFragment(DiffSide.RIGHT, 0, 0, renderRow(rightTable, rightRow)))));</span>
+<span class="fc" id="L134">            } else {</span>
+<span class="nc" id="L135">                hunks.add(DiffHunk.of(</span>
+<span class="nc" id="L136">                        &quot;csv-row-&quot; + encodeKey(key),</span>
+<span class="nc" id="L137">                        DiffType.DELETE,</span>
+<span class="nc" id="L138">                        &quot;Delete row &quot; + key,</span>
+<span class="nc" id="L139">                        List.of(new DiffFragment(DiffSide.LEFT, 0, 0, renderRow(leftTable, leftRow)))));</span>
+            }
+        }
+<span class="fc" id="L142">        return new DiffResult(FormatType.CSV, hunks, Duration.between(start, Instant.now()));</span>
+    }
+
+    private String encodeKey(String key) {
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">        if (key == null) {</span>
+<span class="nc" id="L147">            return Base64.getEncoder().encodeToString(&quot;&lt;null&gt;&quot;.getBytes(StandardCharsets.UTF_8));</span>
+        }
+<span class="fc" id="L149">        return Base64.getEncoder().encodeToString(key.getBytes(StandardCharsets.UTF_8));</span>
+    }
+
+    private String decodeKey(String encoded) {
+<span class="pc bpc" id="L153" title="2 of 4 branches missed.">        if (encoded == null || encoded.isBlank()) {</span>
+<span class="nc" id="L154">            return &quot;&quot;;</span>
+        }
+<span class="fc" id="L156">        String decoded = new String(Base64.getDecoder().decode(encoded), StandardCharsets.UTF_8);</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">        return &quot;&lt;null&gt;&quot;.equals(decoded) ? &quot;&quot; : decoded;</span>
+    }
+
+    private int determineKeyIndex(CsvTable left, CsvTable right) {
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">        List&lt;String&gt; headers = !left.getHeaders().isEmpty() ? left.getHeaders() : right.getHeaders();</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">        if (headers.isEmpty()) {</span>
+<span class="nc" id="L163">            return 0;</span>
+        }
+<span class="fc bfc" id="L165" title="All 2 branches covered.">        for (int i = 0; i &lt; headers.size(); i++) {</span>
+<span class="fc" id="L166">            String header = headers.get(i).toLowerCase(Locale.ENGLISH);</span>
+<span class="pc bpc" id="L167" title="2 of 6 branches missed.">            if (header.contains(&quot;id&quot;) || header.contains(&quot;key&quot;) || header.contains(&quot;name&quot;)) {</span>
+<span class="fc" id="L168">                return i;</span>
+            }
+        }
+<span class="fc" id="L171">        return 0;</span>
+    }
+
+    private Map&lt;String, List&lt;String&gt;&gt; indexTable(CsvTable table, int keyIndex) {
+<span class="fc" id="L175">        Map&lt;String, List&lt;String&gt;&gt; map = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">        for (int i = 0; i &lt; table.getRows().size(); i++) {</span>
+<span class="fc" id="L177">            List&lt;String&gt; row = table.getRows().get(i);</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">            String key = keyIndex &lt; row.size() ? row.get(keyIndex) : &quot;row-&quot; + i;</span>
+<span class="fc" id="L179">            map.put(key, row);</span>
+        }
+<span class="fc" id="L181">        return map;</span>
+    }
+
+    private String renderRow(CsvTable table, List&lt;String&gt; row) {
+<span class="fc" id="L185">        StringBuilder builder = new StringBuilder();</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">        for (int i = 0; i &lt; row.size(); i++) {</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">            if (i &gt; 0) {</span>
+<span class="fc" id="L188">                builder.append(&quot; | &quot;);</span>
+            }
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">            String header = table.getHeaders().isEmpty() ? &quot;col&quot; + (i + 1) : table.getHeaders().get(i);</span>
+<span class="fc" id="L191">            builder.append(header).append(&quot;=&quot;).append(row.get(i));</span>
+        }
+<span class="fc" id="L193">        return builder.toString();</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    public MergeResult merge(NormalizedContent left,
+                             NormalizedContent right,
+                             List&lt;MergeDecision&gt; decisions,
+                             Path outputPath) throws IOException {
+<span class="fc" id="L202">        Instant start = Instant.now();</span>
+<span class="fc" id="L203">        CsvTable leftTable = (CsvTable) left.getNativeModel();</span>
+<span class="fc" id="L204">        CsvTable rightTable = (CsvTable) right.getNativeModel();</span>
+<span class="fc" id="L205">        int keyIndex = determineKeyIndex(leftTable, rightTable);</span>
+<span class="fc" id="L206">        Map&lt;String, List&lt;String&gt;&gt; merged = new LinkedHashMap&lt;&gt;(indexTable(leftTable, keyIndex));</span>
+<span class="fc" id="L207">        Map&lt;String, List&lt;String&gt;&gt; rightMap = indexTable(rightTable, keyIndex);</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">        for (MergeDecision decision : decisions) {</span>
+<span class="fc" id="L209">            String key = decodeKey(decision.getHunkId().replace(&quot;csv-row-&quot;, &quot;&quot;));</span>
+<span class="pc bpc" id="L210" title="2 of 4 branches missed.">            switch (decision.getChoice()) {</span>
+                case TAKE_LEFT -&gt; {
+                    // nothing: keep left row
+                }
+                case TAKE_RIGHT -&gt; {
+<span class="fc" id="L215">                    List&lt;String&gt; rightRow = rightMap.get(key);</span>
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">                    if (rightRow != null) {</span>
+<span class="fc" id="L217">                        merged.put(key, new ArrayList&lt;&gt;(rightRow));</span>
+                    }
+                }
+                case MANUAL -&gt; {
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">                    if (decision.getManualContent() != null) {</span>
+<span class="fc" id="L222">                        merged.put(key, parseManualRow(decision.getManualContent(), leftTable.getHeaders()));</span>
+                    }
+                }
+            }
+        }
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">        if (outputPath != null) {</span>
+<span class="fc" id="L228">            List&lt;String&gt; lines = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">            if (!leftTable.getHeaders().isEmpty()) {</span>
+<span class="fc" id="L230">                lines.add(String.join(&quot;,&quot;, leftTable.getHeaders()));</span>
+            }
+<span class="fc bfc" id="L232" title="All 2 branches covered.">            for (List&lt;String&gt; row : merged.values()) {</span>
+<span class="fc" id="L233">                lines.add(formatCsvLine(row));</span>
+            }
+<span class="fc" id="L235">            Files.write(outputPath, lines, left.getEncoding());</span>
+        }
+<span class="fc" id="L237">        return new MergeResult(FormatType.CSV, outputPath, Duration.between(start, Instant.now()));</span>
+    }
+
+    private List&lt;String&gt; parseManualRow(String manualContent, List&lt;String&gt; headers) {
+<span class="fc" id="L241">        String[] parts = manualContent.split(&quot;\\|&quot;);</span>
+<span class="fc" id="L242">        List&lt;String&gt; row = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">        for (String part : parts) {</span>
+<span class="fc" id="L244">            part = part.trim();</span>
+<span class="fc" id="L245">            String[] kv = part.split(&quot;=&quot;, 2);</span>
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">            String value = kv.length == 2 ? kv[1].trim() : kv[0].trim();</span>
+<span class="fc" id="L247">            row.add(value);</span>
+        }
+<span class="fc bfc" id="L249" title="All 2 branches covered.">        while (row.size() &lt; headers.size()) {</span>
+<span class="fc" id="L250">            row.add(&quot;&quot;);</span>
+        }
+<span class="fc" id="L252">        return row;</span>
+    }
+
+    private String formatCsvLine(List&lt;String&gt; row) {
+<span class="fc" id="L256">        List&lt;String&gt; escaped = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L257" title="All 2 branches covered.">        for (String value : row) {</span>
+<span class="pc bpc" id="L258" title="3 of 6 branches missed.">            if (value.contains(&quot;,&quot;) || value.contains(&quot;\&quot;&quot;) || value.contains(&quot;\n&quot;)) {</span>
+<span class="nc" id="L259">                escaped.add('&quot;' + value.replace(&quot;\&quot;&quot;, &quot;\&quot;\&quot;&quot;) + '&quot;');</span>
+<span class="nc" id="L260">            } else {</span>
+<span class="fc" id="L261">                escaped.add(value);</span>
+            }
+        }
+<span class="fc" id="L264">        return String.join(&quot;,&quot;, escaped);</span>
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

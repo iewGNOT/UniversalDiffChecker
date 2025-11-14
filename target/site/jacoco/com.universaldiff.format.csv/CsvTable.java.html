@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CsvTable.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Universal Difference Checker</a> &gt; <a href="index.source.html" class="el_package">com.universaldiff.format.csv</a> &gt; <span class="el_source">CsvTable.java</span></div><h1>CsvTable.java</h1><pre class="source lang-java linenums">package com.universaldiff.format.csv;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+
+public final class CsvTable {
+    private final List&lt;String&gt; headers;
+    private final List&lt;List&lt;String&gt;&gt; rows;
+
+<span class="fc" id="L12">    public CsvTable(List&lt;String&gt; headers, List&lt;List&lt;String&gt;&gt; rows) {</span>
+<span class="pc bpc" id="L13" title="1 of 2 branches missed.">        this.headers = headers == null ? List.of() : Collections.unmodifiableList(new ArrayList&lt;&gt;(headers));</span>
+<span class="pc bpc" id="L14" title="1 of 2 branches missed.">        this.rows = rows == null ? List.of() : Collections.unmodifiableList(rows.stream()</span>
+<span class="fc" id="L15">                .map(row -&gt; Collections.unmodifiableList(new ArrayList&lt;&gt;(row)))</span>
+<span class="fc" id="L16">                .toList());</span>
+<span class="fc" id="L17">    }</span>
+
+    public List&lt;String&gt; getHeaders() {
+<span class="fc" id="L20">        return headers;</span>
+    }
+
+    public List&lt;List&lt;String&gt;&gt; getRows() {
+<span class="fc" id="L24">        return rows;</span>
+    }
+
+    public String formatRow(int index) {
+<span class="fc bfc" id="L28" title="All 4 branches covered.">        if (index &lt; 0 || index &gt;= rows.size()) {</span>
+<span class="fc" id="L29">            return &quot;&quot;;</span>
+        }
+<span class="fc" id="L31">        List&lt;String&gt; row = rows.get(index);</span>
+<span class="fc" id="L32">        StringBuilder builder = new StringBuilder();</span>
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        for (int i = 0; i &lt; row.size(); i++) {</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">            String header = headers.isEmpty() ? &quot;col&quot; + (i + 1) : headers.get(i);</span>
+<span class="fc bfc" id="L35" title="All 2 branches covered.">            if (i &gt; 0) {</span>
+<span class="fc" id="L36">                builder.append(&quot; | &quot;);</span>
+            }
+<span class="fc" id="L38">            builder.append(header).append(&quot;=&quot;).append(row.get(i));</span>
+        }
+<span class="fc" id="L40">        return builder.toString();</span>
+    }
+
+    public int size() {
+<span class="fc" id="L44">        return rows.size();</span>
+    }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PointerAwareJsonMerger.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Universal Difference Checker</a> &gt; <a href="index.source.html" class="el_package">com.universaldiff.format.json</a> &gt; <span class="el_source">PointerAwareJsonMerger.java</span></div><h1>PointerAwareJsonMerger.java</h1><pre class="source lang-java linenums">package com.universaldiff.format.json;
+
+import com.fasterxml.jackson.core.JsonPointer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.universaldiff.core.model.FormatType;
+import com.universaldiff.core.model.MergeDecision;
+import com.universaldiff.core.model.MergeResult;
+import com.universaldiff.core.model.NormalizedContent;
+import com.universaldiff.format.json.spi.JsonMerger;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Base64;
+import java.util.List;
+
+/**
+ * Applies merge decisions by navigating JSON pointers encoded in diff hunk identifiers.
+ * Delegates parsing and serialization to Jackson to honour JSON semantics.
+ */
+final class PointerAwareJsonMerger implements JsonMerger {
+
+    private final ObjectMapper mapper;
+
+<span class="fc" id="L32">    PointerAwareJsonMerger(ObjectMapper mapper) {</span>
+<span class="fc" id="L33">        this.mapper = mapper;</span>
+<span class="fc" id="L34">    }</span>
+
+    @Override
+    public MergeResult merge(NormalizedContent left,
+                             NormalizedContent right,
+                             List&lt;MergeDecision&gt; decisions,
+                             Path outputPath) throws IOException {
+<span class="fc" id="L41">        Instant start = Instant.now();</span>
+<span class="fc" id="L42">        JsonNode leftRoot = (JsonNode) left.getNativeModel();</span>
+<span class="pc bpc" id="L43" title="1 of 2 branches missed.">        if (!(leftRoot instanceof ObjectNode objectRoot)) {</span>
+<span class="nc" id="L44">            throw new IOException(&quot;JSON merge currently supports object roots only&quot;);</span>
+        }
+<span class="fc" id="L46">        ObjectNode merged = objectRoot.deepCopy();</span>
+<span class="fc" id="L47">        JsonNode rightRoot = (JsonNode) right.getNativeModel();</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        for (MergeDecision decision : decisions) {</span>
+<span class="fc" id="L49">            String pointerEncoded = decision.getHunkId().replace(&quot;json-path-&quot;, &quot;&quot;);</span>
+<span class="fc" id="L50">            String pointer = decode(pointerEncoded);</span>
+<span class="pc bpc" id="L51" title="2 of 4 branches missed.">            switch (decision.getChoice()) {</span>
+                case TAKE_LEFT -&gt; {
+                    // already left, nothing to do
+                }
+                case TAKE_RIGHT -&gt; {
+<span class="fc" id="L56">                    JsonNode rightValue = resolveNode(rightRoot, pointer);</span>
+<span class="fc" id="L57">                    setValue(merged, pointer, rightValue);</span>
+                }
+                case MANUAL -&gt; {
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">                    if (decision.getManualContent() != null) {</span>
+<span class="fc" id="L61">                        JsonNode manual = mapper.readTree(decision.getManualContent());</span>
+<span class="fc" id="L62">                        setValue(merged, pointer, manual);</span>
+                    }
+                }
+            }
+        }
+<span class="fc" id="L67">        Path writtenPath = outputPath;</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">        if (outputPath != null) {</span>
+<span class="fc" id="L69">            String serialized = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(merged);</span>
+<span class="fc" id="L70">            Files.writeString(outputPath, serialized, left.getEncoding());</span>
+        }
+<span class="fc" id="L72">        return new MergeResult(FormatType.JSON, writtenPath, Duration.between(start, Instant.now()));</span>
+    }
+
+    private JsonNode resolveNode(JsonNode root, String pointer) {
+<span class="fc" id="L76">        JsonPointer jsonPointer = JsonPointer.compile(pointer);</span>
+<span class="fc" id="L77">        return root.at(jsonPointer);</span>
+    }
+
+    private void setValue(ObjectNode root, String pointer, JsonNode value) {
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        if (&quot;&quot;.equals(pointer)) {</span>
+<span class="fc" id="L82">            throw new IllegalArgumentException(&quot;Cannot replace root node&quot;);</span>
+        }
+<span class="fc" id="L84">        String[] tokens = pointer.substring(1).split(&quot;/&quot;);</span>
+<span class="fc" id="L85">        JsonNode current = root;</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">        for (int i = 0; i &lt; tokens.length - 1; i++) {</span>
+<span class="fc" id="L87">            String token = unescape(tokens[i]);</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">            if (current.isObject()) {</span>
+<span class="fc" id="L89">                ObjectNode objectNode = (ObjectNode) current;</span>
+<span class="fc" id="L90">                JsonNode child = objectNode.get(token);</span>
+<span class="pc bpc" id="L91" title="2 of 4 branches missed.">                if (child == null || child.isNull()) {</span>
+<span class="nc" id="L92">                    child = guessChild(tokens[i + 1]);</span>
+<span class="nc" id="L93">                    objectNode.set(token, child);</span>
+                }
+<span class="fc" id="L95">                current = child;</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">            } else if (current.isArray()) {</span>
+<span class="fc" id="L97">                int index = Integer.parseInt(token);</span>
+<span class="fc" id="L98">                ArrayNode arrayNode = (ArrayNode) current;</span>
+<span class="fc" id="L99">                ensureSize(arrayNode, index + 1);</span>
+<span class="fc" id="L100">                JsonNode child = arrayNode.get(index);</span>
+<span class="pc bpc" id="L101" title="2 of 4 branches missed.">                if (child == null || child.isNull()) {</span>
+<span class="nc" id="L102">                    child = guessChild(tokens[i + 1]);</span>
+<span class="nc" id="L103">                    arrayNode.set(index, child);</span>
+                }
+<span class="fc" id="L105">                current = child;</span>
+<span class="fc" id="L106">            } else {</span>
+<span class="nc" id="L107">                throw new IllegalArgumentException(&quot;Pointer path traversed a non-container node: &quot; + pointer);</span>
+            }
+        }
+<span class="fc" id="L110">        String lastToken = unescape(tokens[tokens.length - 1]);</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        if (current.isObject()) {</span>
+<span class="fc" id="L112">            ((ObjectNode) current).set(lastToken, value);</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        } else if (current.isArray()) {</span>
+<span class="fc" id="L114">            ArrayNode arrayNode = (ArrayNode) current;</span>
+<span class="fc" id="L115">            int index = Integer.parseInt(lastToken);</span>
+<span class="fc" id="L116">            ensureSize(arrayNode, index + 1);</span>
+<span class="fc" id="L117">            arrayNode.set(index, value);</span>
+<span class="fc" id="L118">        } else {</span>
+<span class="fc" id="L119">            throw new IllegalArgumentException(&quot;Pointer path terminated in a non-container node: &quot; + pointer);</span>
+        }
+<span class="fc" id="L121">    }</span>
+
+    private JsonNode guessChild(String token) {
+<span class="nc bnc" id="L124" title="All 2 branches missed.">        if (token.matches(&quot;\\d+&quot;)) {</span>
+<span class="nc" id="L125">            return JsonNodeFactory.instance.arrayNode();</span>
+        }
+<span class="nc" id="L127">        return JsonNodeFactory.instance.objectNode();</span>
+    }
+
+    private void ensureSize(ArrayNode arrayNode, int size) {
+<span class="fc bfc" id="L131" title="All 2 branches covered.">        while (arrayNode.size() &lt; size) {</span>
+<span class="fc" id="L132">            arrayNode.add(JsonNodeFactory.instance.nullNode());</span>
+        }
+<span class="fc" id="L134">    }</span>
+
+    private String decode(String encoded) {
+<span class="fc" id="L137">        return new String(Base64.getDecoder().decode(encoded), StandardCharsets.UTF_8);</span>
+    }
+
+    private String unescape(String token) {
+<span class="fc" id="L141">        return token.replace(&quot;~1&quot;, &quot;/&quot;).replace(&quot;~0&quot;, &quot;~&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

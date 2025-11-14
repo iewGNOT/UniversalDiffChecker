@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ComparisonService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Universal Difference Checker</a> &gt; <a href="index.source.html" class="el_package">com.universaldiff.core</a> &gt; <span class="el_source">ComparisonService.java</span></div><h1>ComparisonService.java</h1><pre class="source lang-java linenums">package com.universaldiff.core;
+
+import com.universaldiff.core.detect.DefaultFileTypeDetector;
+import com.universaldiff.core.io.BomEncodingDetector;
+import com.universaldiff.core.io.DefaultFileLoader;
+import com.universaldiff.core.io.FileLoader;
+import com.universaldiff.core.model.ComparisonOptions;
+import com.universaldiff.core.model.ComparisonSession;
+import com.universaldiff.core.model.FormatType;
+import com.universaldiff.format.spi.FormatAdapterRegistry;
+import com.universaldiff.format.spi.InMemoryFormatAdapterRegistry;
+
+import java.io.IOException;
+import java.nio.file.Path;
+
+public interface ComparisonService {
+
+    ComparisonSession compare(Path leftPath, Path rightPath) throws IOException;
+
+    ComparisonSession compare(Path leftPath, Path rightPath, ComparisonOptions options) throws IOException;
+
+    static ComparisonService createDefault() {
+<span class="fc" id="L23">        return createDefault(true);</span>
+    }
+
+    static ComparisonService createDefault(boolean ignoreJsonKeyOrder) {
+<span class="fc" id="L27">        FormatAdapterRegistry registry = new InMemoryFormatAdapterRegistry();</span>
+<span class="fc" id="L28">        registry.register(FormatType.TXT, new com.universaldiff.format.txt.TxtFormatAdapter());</span>
+<span class="fc" id="L29">        registry.register(FormatType.CSV, new com.universaldiff.format.csv.CsvFormatAdapter());</span>
+<span class="fc" id="L30">        registry.register(FormatType.JSON, new com.universaldiff.format.json.JsonFormatAdapter(ignoreJsonKeyOrder));</span>
+<span class="fc" id="L31">        registry.register(FormatType.XML, new com.universaldiff.format.xml.XmlFormatAdapter());</span>
+<span class="fc" id="L32">        registry.register(FormatType.BIN, new com.universaldiff.format.bin.BinaryFormatAdapter(FormatType.BIN));</span>
+<span class="fc" id="L33">        registry.register(FormatType.HEX, new com.universaldiff.format.bin.BinaryFormatAdapter(FormatType.HEX));</span>
+
+<span class="fc" id="L35">        FileLoader loader = new DefaultFileLoader(new DefaultFileTypeDetector(), new BomEncodingDetector());</span>
+<span class="fc" id="L36">        return new DefaultComparisonService(loader, registry);</span>
+    }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
