@@ -173,6 +173,8 @@ public class UniversalDiffApp extends Application {
         openRight.setOnAction(e -> chooseFile(stage, false));
         Button compareButton = createPrimaryButton("Compare");
         compareButton.setOnAction(e -> runComparison());
+        compareButton.disableProperty().bind(viewModel.leftPathProperty().isNull()
+                .or(viewModel.rightPathProperty().isNull()));
 
         HBox fileControls = new HBox(openLeft, openRight, compareButton);
         fileControls.setSpacing(8);
