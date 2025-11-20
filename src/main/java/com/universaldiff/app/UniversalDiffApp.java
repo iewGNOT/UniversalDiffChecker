@@ -7,7 +7,8 @@ import com.universaldiff.core.model.MergeChoice;
 import com.universaldiff.core.model.MergeDecision;
 import com.universaldiff.ui.viewmodel.DiffViewModel;
 import javafx.application.Application;
-import javafx.collections.ListChangeListener;
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -19,7 +20,6 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
 import javafx.scene.control.Separator;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
@@ -36,10 +36,13 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.scene.text.Text;
-import javafx.scene.text.TextFlow;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import org.fxmisc.flowless.VirtualizedScrollPane;
+import org.fxmisc.richtext.InlineCssTextArea;
+import org.fxmisc.richtext.LineNumberFactory;
+import org.fxmisc.richtext.model.StyleSpans;
+import org.fxmisc.richtext.model.StyleSpansBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +53,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.IntFunction;
 
 public class UniversalDiffApp extends Application {
 
@@ -62,7 +68,6 @@ public class UniversalDiffApp extends Application {
     private static final Font TITLE_FONT = Font.font("Segoe UI Semibold", 20);
     private static final Font SECTION_FONT = Font.font("Segoe UI Semibold", 15);
     private static final Font CONTROL_FONT = Font.font("Segoe UI", 13);
-    private static final Font MONO_FONT = Font.font("Consolas", 13);
     private static final Font MONO_LABEL_FONT = Font.font("Consolas", FontWeight.SEMI_BOLD, 12);
 
     private static final Color TEXT_COLOR = Color.rgb(26, 28, 34);
@@ -71,32 +76,33 @@ public class UniversalDiffApp extends Application {
     private static final Background ROOT_BACKGROUND = new Background(new BackgroundFill(Color.rgb(247, 248, 251), CornerRadii.EMPTY, Insets.EMPTY));
     private static final Background CARD_BACKGROUND = new Background(new BackgroundFill(Color.WHITE, new CornerRadii(14), Insets.EMPTY));
     private static final Border CARD_BORDER = new Border(new BorderStroke(Color.rgb(227, 230, 235), BorderStrokeStyle.SOLID, new CornerRadii(14), new BorderWidths(1)));
-    private static final Background ROW_BACKGROUND = new Background(new BackgroundFill(Color.rgb(251, 252, 255), new CornerRadii(8), Insets.EMPTY));
-    private static final Border ROW_BORDER = new Border(new BorderStroke(Color.rgb(229, 232, 238), BorderStrokeStyle.SOLID, new CornerRadii(8), new BorderWidths(1)));
-    private static final Background ROW_HIGHLIGHT_LEFT = new Background(new BackgroundFill(Color.rgb(254, 226, 226), new CornerRadii(8), Insets.EMPTY));
-    private static final Background ROW_HIGHLIGHT_RIGHT = new Background(new BackgroundFill(Color.rgb(220, 252, 231), new CornerRadii(8), Insets.EMPTY));
-    private static final Border ROW_BORDER_LEFT = new Border(new BorderStroke(Color.rgb(248, 113, 113), BorderStrokeStyle.SOLID, new CornerRadii(8), new BorderWidths(1, 1, 1, 3)));
-    private static final Border ROW_BORDER_RIGHT = new Border(new BorderStroke(Color.rgb(34, 197, 94), BorderStrokeStyle.SOLID, new CornerRadii(8), new BorderWidths(1, 3, 1, 1)));
     private static final Background LINE_NUMBER_BACKGROUND = new Background(new BackgroundFill(Color.rgb(239, 241, 245), new CornerRadii(6), Insets.EMPTY));
     private static final Border LINE_NUMBER_BORDER = new Border(new BorderStroke(Color.rgb(225, 228, 233), BorderStrokeStyle.SOLID, new CornerRadii(6), new BorderWidths(1)));
-    private static final Background TEXT_HIGHLIGHT_LEFT = new Background(new BackgroundFill(Color.rgb(248, 113, 113, 0.25), new CornerRadii(4), Insets.EMPTY));
-    private static final Border TEXT_HIGHLIGHT_BORDER_LEFT = new Border(new BorderStroke(Color.rgb(220, 38, 38, 0.5), BorderStrokeStyle.SOLID, new CornerRadii(4), BorderWidths.DEFAULT));
-    private static final Background TEXT_HIGHLIGHT_RIGHT = new Background(new BackgroundFill(Color.rgb(74, 222, 128, 0.25), new CornerRadii(4), Insets.EMPTY));
-    private static final Border TEXT_HIGHLIGHT_BORDER_RIGHT = new Border(new BorderStroke(Color.rgb(22, 163, 74, 0.5), BorderStrokeStyle.SOLID, new CornerRadii(4), BorderWidths.DEFAULT));
+
+    private static final String STYLE_TEXT_NORMAL = "-fx-fill: #1A1C22;";
+    private static final String STYLE_TEXT_MUTED = "-fx-fill: #6D717A;";
+    private static final String STYLE_TEXT_INFO = "-fx-fill: #475467; -fx-font-style: italic;";
+    private static final String STYLE_DIFF_LEFT = "-fx-fill: #1A1C22; -rtfx-background-color: rgba(248,113,113,0.25); -fx-font-weight: 600;";
+    private static final String STYLE_DIFF_RIGHT = "-fx-fill: #1A1C22; -rtfx-background-color: rgba(74,222,128,0.25); -fx-font-weight: 600;";
+    private static final String STYLE_BINARY_OFFSET = "-fx-fill: #6D717A; -fx-font-weight: 600;";
 
     private final DiffViewModel viewModel = new DiffViewModel();
 
-    private ListView<DiffEntry> leftDiffView;
-    private ListView<DiffEntry> rightDiffView;
+    private InlineCssTextArea leftTextArea;
+    private InlineCssTextArea rightTextArea;
+
+    private final ExecutorService renderExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread thread = new Thread(r, "diff-renderer");
+        thread.setDaemon(true);
+        return thread;
+    });
 
     @Override
     public void start(Stage stage) {
         stage.setTitle("Universal Difference Checker");
 
-        leftDiffView = createDiffListView();
-        rightDiffView = createDiffListView();
-
-        viewModel.hunksProperty().addListener((ListChangeListener<? super DiffHunk>) change -> renderDiffColumns());
+        leftTextArea = createDiffArea();
+        rightTextArea = createDiffArea();
 
         BorderPane root = new BorderPane();
         root.setBackground(ROOT_BACKGROUND);
@@ -237,8 +243,11 @@ public class UniversalDiffApp extends Application {
     }
 
     private Node createDiffContent() {
-        VBox leftCard = buildDiffCard("Left source", leftDiffView);
-        VBox rightCard = buildDiffCard("Right source", rightDiffView);
+        VirtualizedScrollPane<InlineCssTextArea> leftPane = new VirtualizedScrollPane<>(leftTextArea);
+        VirtualizedScrollPane<InlineCssTextArea> rightPane = new VirtualizedScrollPane<>(rightTextArea);
+
+        VBox leftCard = buildDiffCard("Left source", leftPane);
+        VBox rightCard = buildDiffCard("Right source", rightPane);
 
         HBox content = new HBox(leftCard, rightCard);
         content.setSpacing(16);
@@ -248,202 +257,40 @@ public class UniversalDiffApp extends Application {
         return content;
     }
 
-    private VBox buildDiffCard(String title, ListView<DiffEntry> listView) {
+    private VBox buildDiffCard(String title, Node contentNode) {
         Label header = new Label(title);
         header.setFont(SECTION_FONT);
         header.setTextFill(TEXT_COLOR);
 
-        listView.setPlaceholder(createPlaceholderLabel());
-
-        VBox card = new VBox(header, listView);
+        VBox card = new VBox(header, contentNode);
         card.setSpacing(12);
         card.setBackground(CARD_BACKGROUND);
         card.setBorder(CARD_BORDER);
         card.setPadding(new Insets(16, 20, 20, 20));
-        VBox.setVgrow(listView, Priority.ALWAYS);
+        VBox.setVgrow(contentNode, Priority.ALWAYS);
         return card;
     }
 
-    private Label createPlaceholderLabel() {
-        Label placeholder = new Label("Load files and run Compare to see differences.");
-        placeholder.setFont(CONTROL_FONT);
-        placeholder.setTextFill(MUTED_TEXT_COLOR);
-        placeholder.setWrapText(true);
-        placeholder.setAlignment(Pos.CENTER);
-        return placeholder;
-    }
+    private InlineCssTextArea createDiffArea() {
+        InlineCssTextArea area = new InlineCssTextArea();
+        area.setEditable(false);
+        area.setWrapText(false);
+        area.setStyle("-fx-font-family: 'Consolas'; -fx-font-size: 13px;");
+        area.setFocusTraversable(false);
 
-    private ListView<DiffEntry> createDiffListView() {
-        ListView<DiffEntry> listView = new ListView<>();
-        listView.setFocusTraversable(false);
-        listView.setBackground(Background.EMPTY);
-        listView.setBorder(Border.EMPTY);
-        listView.setCellFactory(view -> new DiffListCell());
-        return listView;
-    }
-
-    private class DiffListCell extends ListCell<DiffEntry> {
-        DiffListCell() {
-            setPadding(new Insets(4, 0, 4, 0));
-        }
-
-        @Override
-        protected void updateItem(DiffEntry entry, boolean empty) {
-            super.updateItem(entry, empty);
-            if (empty || entry == null) {
-                setGraphic(null);
-                return;
+        IntFunction<Node> baseFactory = LineNumberFactory.get(area);
+        area.setParagraphGraphicFactory(line -> {
+            Node node = baseFactory.apply(line);
+            if (node instanceof Label label) {
+                label.setFont(MONO_LABEL_FONT);
+                label.setTextFill(MUTED_TEXT_COLOR);
+                label.setBackground(LINE_NUMBER_BACKGROUND);
+                label.setBorder(LINE_NUMBER_BORDER);
+                label.setPadding(new Insets(0, 12, 0, 0));
             }
-            setGraphic(switch (entry.kind()) {
-                case TEXT -> buildTextRow((TextDiffEntry) entry);
-                case BINARY -> buildBinaryRow((BinaryDiffEntry) entry);
-                case TRUNCATION -> buildTruncationRow((TruncationDiffEntry) entry);
-            });
-        }
-    }
-
-    private Node buildTextRow(TextDiffEntry entry) {
-        boolean highlight = entry.line().segments().stream().anyMatch(segment -> segment.type() == SegmentType.DIFF);
-        HBox row = createRowContainer(entry.side(), highlight);
-
-        Label number = createLineNumberLabel(entry.line().number());
-        TextFlow flow = new TextFlow();
-        flow.setLineSpacing(1.6);
-        flow.setPrefWidth(Double.MAX_VALUE);
-        flow.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(flow, Priority.ALWAYS);
-
-        if (entry.line().segments().isEmpty()) {
-            flow.getChildren().add(new Text(""));
-        } else {
-            for (Segment segment : entry.line().segments()) {
-                flow.getChildren().add(buildSegmentNode(segment, entry.side()));
-            }
-        }
-
-        row.getChildren().addAll(number, flow);
-        return row;
-    }
-
-    private Node buildBinaryRow(BinaryDiffEntry entry) {
-        boolean highlight = entry.line().cells().stream().anyMatch(BinaryCell::diff);
-        HBox row = createRowContainer(entry.side(), highlight);
-
-        Label offset = new Label(String.format("%08X", entry.line().offset()));
-        offset.setFont(MONO_LABEL_FONT);
-        offset.setTextFill(MUTED_TEXT_COLOR);
-        offset.setBackground(LINE_NUMBER_BACKGROUND);
-        offset.setBorder(LINE_NUMBER_BORDER);
-        offset.setPadding(new Insets(2, 12, 2, 12));
-
-        TextFlow hexFlow = new TextFlow();
-        hexFlow.setLineSpacing(2);
-        TextFlow asciiFlow = new TextFlow();
-        asciiFlow.setLineSpacing(2);
-
-        for (BinaryCell cell : entry.line().cells()) {
-            Label hexLabel = new Label(cell.hex());
-            hexLabel.setFont(MONO_FONT);
-            hexLabel.setPadding(new Insets(0, 6, 0, 0));
-
-            Label asciiLabel = new Label(cell.present() ? String.valueOf(cell.ascii()) : " ");
-            asciiLabel.setFont(MONO_FONT);
-            asciiLabel.setPadding(new Insets(0, 3, 0, 0));
-
-            if (cell.diff() && cell.present()) {
-                applyBinaryHighlight(hexLabel, entry.side());
-                applyBinaryHighlight(asciiLabel, entry.side());
-            }
-
-            hexFlow.getChildren().add(hexLabel);
-            asciiFlow.getChildren().add(asciiLabel);
-        }
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        row.getChildren().addAll(offset, hexFlow, spacer, asciiFlow);
-        return row;
-    }
-
-    private Node buildTruncationRow(TruncationDiffEntry entry) {
-        HBox row = createRowContainer(null, false);
-
-        Label badge = new Label("...");
-        badge.setFont(MONO_LABEL_FONT);
-        badge.setTextFill(MUTED_TEXT_COLOR);
-        badge.setBackground(LINE_NUMBER_BACKGROUND);
-        badge.setBorder(LINE_NUMBER_BORDER);
-        badge.setPadding(new Insets(2, 8, 2, 8));
-
-        String unit = entry.binary() ? "bytes" : "characters";
-        String messageText = String.format("Showing first %,d of %,d %s for performance.", entry.shown(), entry.total(), unit);
-        Label message = new Label(messageText);
-        message.setFont(CONTROL_FONT);
-        message.setWrapText(true);
-        message.setTextFill(MUTED_TEXT_COLOR);
-
-        row.getChildren().addAll(badge, message);
-        return row;
-    }
-
-    private HBox createRowContainer(DiffSide side, boolean emphasize) {
-        HBox row = new HBox();
-        row.setAlignment(Pos.CENTER_LEFT);
-        row.setSpacing(12);
-        row.setPadding(new Insets(6, 10, 6, 10));
-        if (!emphasize || side == null) {
-            row.setBackground(ROW_BACKGROUND);
-            row.setBorder(ROW_BORDER);
-        } else if (side == DiffSide.LEFT) {
-            row.setBackground(ROW_HIGHLIGHT_LEFT);
-            row.setBorder(ROW_BORDER_LEFT);
-        } else {
-            row.setBackground(ROW_HIGHLIGHT_RIGHT);
-            row.setBorder(ROW_BORDER_RIGHT);
-        }
-        return row;
-    }
-
-    private Label createLineNumberLabel(int number) {
-        Label label = new Label(String.valueOf(number));
-        label.setFont(MONO_LABEL_FONT);
-        label.setTextFill(MUTED_TEXT_COLOR);
-        label.setBackground(LINE_NUMBER_BACKGROUND);
-        label.setBorder(LINE_NUMBER_BORDER);
-        label.setPadding(new Insets(2, 8, 2, 8));
-        label.setAlignment(Pos.CENTER_RIGHT);
-        label.setMinWidth(60);
-        return label;
-    }
-
-    private Node buildSegmentNode(Segment segment, DiffSide side) {
-        if (segment.type() == SegmentType.DIFF) {
-            Label highlight = new Label(segment.text());
-            highlight.setFont(MONO_FONT);
-            highlight.setPadding(new Insets(0, 4, 0, 4));
-            if (side == DiffSide.LEFT) {
-                highlight.setBackground(TEXT_HIGHLIGHT_LEFT);
-                highlight.setBorder(TEXT_HIGHLIGHT_BORDER_LEFT);
-            } else {
-                highlight.setBackground(TEXT_HIGHLIGHT_RIGHT);
-                highlight.setBorder(TEXT_HIGHLIGHT_BORDER_RIGHT);
-            }
-            return highlight;
-        }
-        Text text = new Text(segment.text());
-        text.setFont(MONO_FONT);
-        text.setFill(TEXT_COLOR);
-        return text;
-    }
-
-    private void applyBinaryHighlight(Label label, DiffSide side) {
-        if (side == DiffSide.LEFT) {
-            label.setBackground(TEXT_HIGHLIGHT_LEFT);
-            label.setBorder(TEXT_HIGHLIGHT_BORDER_LEFT);
-        } else {
-            label.setBackground(TEXT_HIGHLIGHT_RIGHT);
-            label.setBorder(TEXT_HIGHLIGHT_BORDER_RIGHT);
-        }
+            return node;
+        });
+        return area;
     }
 
     private void chooseFile(Stage stage, boolean isLeft) {
@@ -464,13 +311,22 @@ public class UniversalDiffApp extends Application {
     }
 
     private void runComparison() {
-        try {
-            viewModel.compare();
-            renderDiffColumns();
-        } catch (IOException ex) {
-            log.error("Comparison failed while reading files {} and {}", viewModel.leftPathProperty().get(), viewModel.rightPathProperty().get(), ex);
-            showError("Comparison failed", ex);
-        }
+        Task<Void> comparisonTask = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                viewModel.compare();
+                return null;
+            }
+        };
+        comparisonTask.setOnSucceeded(e -> Platform.runLater(this::renderDiffColumns));
+        comparisonTask.setOnFailed(e -> {
+            Throwable failure = comparisonTask.getException();
+            log.error("Comparison failed while reading files {} and {}", viewModel.leftPathProperty().get(), viewModel.rightPathProperty().get(), failure);
+            Platform.runLater(() -> showError("Comparison failed", toException(failure)));
+        });
+        Thread thread = new Thread(comparisonTask, "diff-compare");
+        thread.setDaemon(true);
+        thread.start();
     }
 
     private void runMerge(Stage stage, MergeChoice choice) {
@@ -502,63 +358,181 @@ public class UniversalDiffApp extends Application {
     }
 
     private void renderDiffColumns() {
+        Task<DiffRenderResult> renderTask = new Task<>() {
+            @Override
+            protected DiffRenderResult call() throws Exception {
+                return buildRenderResult();
+            }
+        };
+        renderTask.setOnSucceeded(e -> {
+            DiffRenderResult result = renderTask.getValue();
+            Platform.runLater(() -> applyRenderResult(result));
+        });
+        renderTask.setOnFailed(e -> {
+            Throwable failure = renderTask.getException();
+            log.error("Failed to render diff columns", failure);
+            Platform.runLater(() -> showError("Render error", toException(failure)));
+        });
+        renderExecutor.submit(renderTask);
+    }
+
+    private DiffRenderResult buildRenderResult() throws IOException {
         Optional<ComparisonSession> sessionOpt = viewModel.getCurrentSession();
         if (sessionOpt.isEmpty()) {
-            return;
+            DiffAreaContent placeholder = placeholderContent("Load files and run Compare to see differences.");
+            return new DiffRenderResult(placeholder, placeholder);
         }
 
-        try {
-            ComparisonSession session = sessionOpt.get();
-            FormatType formatType = session.getLeft().getFormatType();
-            boolean isBinary = isBinaryFormat(formatType);
+        ComparisonSession session = sessionOpt.get();
+        if (isBinaryFormat(session.getLeft().getFormatType())) {
+            BinarySlice leftSlice = readBinarySlice(session.getLeft().getPath());
+            BinarySlice rightSlice = readBinarySlice(session.getRight().getPath());
 
-            if (isBinary) {
-                BinarySlice leftSlice = readBinarySlice(session.getLeft().getPath());
-                BinarySlice rightSlice = readBinarySlice(session.getRight().getPath());
+            List<BinaryLine> leftLines = buildBinaryLines(leftSlice.bytes(), rightSlice.bytes());
+            List<BinaryLine> rightLines = buildBinaryLines(rightSlice.bytes(), leftSlice.bytes());
 
-                List<DiffEntry> leftEntries = new ArrayList<>();
-                leftEntries.addAll(toBinaryEntries(buildBinaryLines(leftSlice.bytes(), rightSlice.bytes()), DiffSide.LEFT));
-                if (leftSlice.truncated()) {
-                    leftEntries.add(new TruncationDiffEntry(true, leftSlice.totalLength(), leftSlice.bytes().length));
-                }
-
-                List<DiffEntry> rightEntries = new ArrayList<>();
-                rightEntries.addAll(toBinaryEntries(buildBinaryLines(rightSlice.bytes(), leftSlice.bytes()), DiffSide.RIGHT));
-                if (rightSlice.truncated()) {
-                    rightEntries.add(new TruncationDiffEntry(true, rightSlice.totalLength(), rightSlice.bytes().length));
-                }
-
-                leftDiffView.getItems().setAll(leftEntries);
-                rightDiffView.getItems().setAll(rightEntries);
-                return;
-            }
-
-            String leftText = String.join("\n", session.getLeftContent().getLogicalRecords());
-            String rightText = String.join("\n", session.getRightContent().getLogicalRecords());
-
-            boolean leftTruncated = leftText.length() > TEXT_RENDER_LIMIT;
-            boolean rightTruncated = rightText.length() > TEXT_RENDER_LIMIT;
-            String leftShown = leftTruncated ? leftText.substring(0, TEXT_RENDER_LIMIT) : leftText;
-            String rightShown = rightTruncated ? rightText.substring(0, TEXT_RENDER_LIMIT) : rightText;
-
-            List<DiffEntry> leftEntries = new ArrayList<>();
-            leftEntries.addAll(toTextEntries(buildTextLines(leftShown, rightShown), DiffSide.LEFT));
-            if (leftTruncated) {
-                leftEntries.add(new TruncationDiffEntry(false, leftText.length(), leftShown.length()));
-            }
-
-            List<DiffEntry> rightEntries = new ArrayList<>();
-            rightEntries.addAll(toTextEntries(buildTextLines(rightShown, leftShown), DiffSide.RIGHT));
-            if (rightTruncated) {
-                rightEntries.add(new TruncationDiffEntry(false, rightText.length(), rightShown.length()));
-            }
-
-            leftDiffView.getItems().setAll(leftEntries);
-            rightDiffView.getItems().setAll(rightEntries);
-        } catch (IOException ex) {
-            log.error("Failed to render diff columns", ex);
-            showError("Render error", ex);
+            DiffAreaContent leftContent = buildBinaryContent(leftLines, DiffSide.LEFT, leftSlice.truncated(), leftSlice.totalLength(), leftSlice.bytes().length);
+            DiffAreaContent rightContent = buildBinaryContent(rightLines, DiffSide.RIGHT, rightSlice.truncated(), rightSlice.totalLength(), rightSlice.bytes().length);
+            return new DiffRenderResult(leftContent, rightContent);
         }
+
+        String leftText = String.join("\n", session.getLeftContent().getLogicalRecords());
+        String rightText = String.join("\n", session.getRightContent().getLogicalRecords());
+
+        boolean leftTruncated = leftText.length() > TEXT_RENDER_LIMIT;
+        boolean rightTruncated = rightText.length() > TEXT_RENDER_LIMIT;
+        String leftShown = leftTruncated ? leftText.substring(0, TEXT_RENDER_LIMIT) : leftText;
+        String rightShown = rightTruncated ? rightText.substring(0, TEXT_RENDER_LIMIT) : rightText;
+
+        List<TextLine> leftLines = buildTextLines(leftShown, rightShown);
+        List<TextLine> rightLines = buildTextLines(rightShown, leftShown);
+
+        DiffAreaContent leftContent = buildTextContent(leftLines, DiffSide.LEFT, leftTruncated, leftText.length(), leftShown.length());
+        DiffAreaContent rightContent = buildTextContent(rightLines, DiffSide.RIGHT, rightTruncated, rightText.length(), rightShown.length());
+        return new DiffRenderResult(leftContent, rightContent);
+    }
+
+    private DiffAreaContent buildTextContent(List<TextLine> lines, DiffSide side, boolean truncated, long totalLength, long shownLength) {
+        boolean completelyEmpty = lines.size() == 1 && lines.get(0).segments().isEmpty();
+        if (completelyEmpty && !truncated) {
+            return placeholderContent("File is empty.");
+        }
+
+        StringBuilder builder = new StringBuilder();
+        StyleSpansBuilder<String> spans = new StyleSpansBuilder<>();
+
+        for (int i = 0; i < lines.size(); i++) {
+            TextLine line = lines.get(i);
+            if (!line.segments().isEmpty()) {
+                for (Segment segment : line.segments()) {
+                    String text = segment.text();
+                    if (!text.isEmpty()) {
+                        builder.append(text);
+                        spans.add(resolveSegmentStyle(side, segment.type()), text.length());
+                    }
+                }
+            }
+            if (i < lines.size() - 1) {
+                builder.append('\n');
+                spans.add(STYLE_TEXT_NORMAL, 1);
+            }
+        }
+
+        if (builder.length() == 0 && !truncated) {
+            return placeholderContent("File contains only blank lines.");
+        }
+
+        if (truncated) {
+            appendTruncationMessage(builder, spans, false, totalLength, shownLength);
+        }
+
+        return new DiffAreaContent(builder.toString(), spans.create());
+    }
+
+    private DiffAreaContent buildBinaryContent(List<BinaryLine> lines, DiffSide side, boolean truncated, long totalLength, long shownLength) {
+        StringBuilder builder = new StringBuilder();
+        StyleSpansBuilder<String> spans = new StyleSpansBuilder<>();
+
+        for (int i = 0; i < lines.size(); i++) {
+            BinaryLine line = lines.get(i);
+            String offset = String.format("%08X  ", line.offset());
+            builder.append(offset);
+            spans.add(STYLE_BINARY_OFFSET, offset.length());
+
+            for (BinaryCell cell : line.cells()) {
+                String block = (cell.present() ? cell.hex() : "  ") + " ";
+                builder.append(block);
+                spans.add(resolveBinaryStyle(side, cell.diff() && cell.present()), block.length());
+            }
+
+            builder.append("|");
+            spans.add(STYLE_BINARY_OFFSET, 1);
+            for (BinaryCell cell : line.cells()) {
+                String ascii = cell.present() ? String.valueOf(cell.ascii()) : " ";
+                builder.append(ascii);
+                spans.add(resolveBinaryStyle(side, cell.diff() && cell.present()), ascii.length());
+            }
+            builder.append("|");
+            spans.add(STYLE_BINARY_OFFSET, 1);
+
+            if (i < lines.size() - 1) {
+                builder.append('\n');
+                spans.add(STYLE_TEXT_NORMAL, 1);
+            }
+        }
+
+        if (builder.length() == 0 && !truncated) {
+            return placeholderContent("Binary data is empty.");
+        }
+
+        if (truncated) {
+            appendTruncationMessage(builder, spans, true, totalLength, shownLength);
+        }
+
+        return new DiffAreaContent(builder.toString(), spans.create());
+    }
+
+    private void appendTruncationMessage(StringBuilder builder, StyleSpansBuilder<String> spans,
+                                         boolean binary, long total, long shown) {
+        if (builder.length() > 0) {
+            builder.append('\n');
+            spans.add(STYLE_TEXT_NORMAL, 1);
+        }
+        String unit = binary ? "bytes" : "characters";
+        String message = String.format("\u2026 Showing first %,d of %,d %s for performance.", shown, total, unit);
+        builder.append(message);
+        spans.add(STYLE_TEXT_INFO, message.length());
+    }
+
+    private String resolveSegmentStyle(DiffSide side, SegmentType type) {
+        if (type == SegmentType.DIFF) {
+            return side == DiffSide.LEFT ? STYLE_DIFF_LEFT : STYLE_DIFF_RIGHT;
+        }
+        return STYLE_TEXT_NORMAL;
+    }
+
+    private String resolveBinaryStyle(DiffSide side, boolean diff) {
+        if (diff) {
+            return side == DiffSide.LEFT ? STYLE_DIFF_LEFT : STYLE_DIFF_RIGHT;
+        }
+        return STYLE_TEXT_NORMAL;
+    }
+
+    private void applyRenderResult(DiffRenderResult result) {
+        applyContent(leftTextArea, result.left());
+        applyContent(rightTextArea, result.right());
+    }
+
+    private void applyContent(InlineCssTextArea area, DiffAreaContent content) {
+        area.replaceText(content.text());
+        area.setStyleSpans(0, content.spans());
+        area.moveTo(0);
+    }
+
+    private DiffAreaContent placeholderContent(String message) {
+        StyleSpansBuilder<String> spans = new StyleSpansBuilder<>();
+        spans.add(STYLE_TEXT_MUTED, message.length());
+        return new DiffAreaContent(message, spans.create());
     }
 
     private boolean isBinaryFormat(FormatType formatType) {
@@ -566,22 +540,6 @@ public class UniversalDiffApp extends Application {
             case BIN, HEX -> true;
             default -> false;
         };
-    }
-
-    private List<DiffEntry> toTextEntries(List<TextLine> lines, DiffSide side) {
-        List<DiffEntry> entries = new ArrayList<>();
-        for (TextLine line : lines) {
-            entries.add(new TextDiffEntry(line, side));
-        }
-        return entries;
-    }
-
-    private List<DiffEntry> toBinaryEntries(List<BinaryLine> lines, DiffSide side) {
-        List<DiffEntry> entries = new ArrayList<>();
-        for (BinaryLine line : lines) {
-            entries.add(new BinaryDiffEntry(line, side));
-        }
-        return entries;
     }
 
     private List<TextLine> buildTextLines(String content, String counterpart) {
@@ -712,6 +670,15 @@ public class UniversalDiffApp extends Application {
         alert.showAndWait();
     }
 
+    private Exception toException(Throwable throwable) {
+        return throwable instanceof Exception ? (Exception) throwable : new Exception(throwable);
+    }
+
+    @Override
+    public void stop() {
+        renderExecutor.shutdownNow();
+    }
+
     public static void main(String[] args) {
         launch(args);
     }
@@ -726,16 +693,6 @@ public class UniversalDiffApp extends Application {
         RIGHT
     }
 
-    private enum RowKind {
-        TEXT,
-        BINARY,
-        TRUNCATION
-    }
-
-    private interface DiffEntry {
-        RowKind kind();
-    }
-
     private record Segment(String text, SegmentType type) {
     }
 
@@ -748,30 +705,15 @@ public class UniversalDiffApp extends Application {
     private record BinaryLine(int offset, List<BinaryCell> cells) {
     }
 
-    private record TextDiffEntry(TextLine line, DiffSide side) implements DiffEntry {
-        @Override
-        public RowKind kind() {
-            return RowKind.TEXT;
-        }
-    }
-
-    private record BinaryDiffEntry(BinaryLine line, DiffSide side) implements DiffEntry {
-        @Override
-        public RowKind kind() {
-            return RowKind.BINARY;
-        }
-    }
-
-    private record TruncationDiffEntry(boolean binary, long total, long shown) implements DiffEntry {
-        @Override
-        public RowKind kind() {
-            return RowKind.TRUNCATION;
-        }
-    }
-
     private record BinarySlice(byte[] bytes, long totalLength) {
         boolean truncated() {
             return totalLength > bytes.length;
         }
+    }
+
+    private record DiffAreaContent(String text, StyleSpans<String> spans) {
+    }
+
+    private record DiffRenderResult(DiffAreaContent left, DiffAreaContent right) {
     }
 }
