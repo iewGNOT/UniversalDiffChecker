@@ -9,6 +9,9 @@ import com.universaldiff.core.model.FormatType;
 import com.universaldiff.core.model.MergeChoice;
 import com.universaldiff.core.model.MergeDecision;
 import com.universaldiff.ui.viewmodel.DiffViewModel;
+import com.universaldiff.core.detect.DefaultFileTypeDetector;
+import com.universaldiff.core.detect.FileTypeDetector;
+import com.universaldiff.core.io.BomEncodingDetector;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -51,6 +54,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -96,6 +101,8 @@ public class UniversalDiffApp extends Application {
 
     private InlineCssTextArea leftTextArea;
     private InlineCssTextArea rightTextArea;
+    private Label leftFormatLabel;
+    private Label rightFormatLabel;
 
     private final ExecutorService renderExecutor = Executors.newSingleThreadExecutor(r -> {
         Thread thread = new Thread(r, "diff-renderer");
@@ -104,6 +111,8 @@ public class UniversalDiffApp extends Application {
     });
     private DiffStreamTask currentRenderTask;
     private Future<?> currentRenderFuture;
+    private final FileTypeDetector fileTypeDetector = new DefaultFileTypeDetector();
+    private final BomEncodingDetector encodingDetector = new BomEncodingDetector();
 
     @Override
     public void start(Stage stage) {
@@ -255,8 +264,11 @@ public class UniversalDiffApp extends Application {
         VirtualizedScrollPane<InlineCssTextArea> leftPane = new VirtualizedScrollPane<>(leftTextArea);
         VirtualizedScrollPane<InlineCssTextArea> rightPane = new VirtualizedScrollPane<>(rightTextArea);
 
-        VBox leftCard = buildDiffCard("Left source", leftPane);
-        VBox rightCard = buildDiffCard("Right source", rightPane);
+        leftFormatLabel = createFormatLabel();
+        rightFormatLabel = createFormatLabel();
+
+        VBox leftCard = buildDiffCard("Left source", leftPane, leftFormatLabel);
+        VBox rightCard = buildDiffCard("Right source", rightPane, rightFormatLabel);
 
         HBox content = new HBox(leftCard, rightCard);
         content.setSpacing(16);
@@ -266,18 +278,28 @@ public class UniversalDiffApp extends Application {
         return content;
     }
 
-    private VBox buildDiffCard(String title, Node contentNode) {
+    private VBox buildDiffCard(String title, Node contentNode, Label formatLabel) {
         Label header = new Label(title);
         header.setFont(SECTION_FONT);
         header.setTextFill(TEXT_COLOR);
 
-        VBox card = new VBox(header, contentNode);
+        VBox headerBox = new VBox(header, formatLabel);
+        headerBox.setSpacing(4);
+
+        VBox card = new VBox(headerBox, contentNode);
         card.setSpacing(12);
         card.setBackground(CARD_BACKGROUND);
         card.setBorder(CARD_BORDER);
         card.setPadding(new Insets(16, 20, 20, 20));
         VBox.setVgrow(contentNode, Priority.ALWAYS);
         return card;
+    }
+
+    private Label createFormatLabel() {
+        Label label = new Label("Format: Unknown");
+        label.setFont(Font.font("Segoe UI", 12));
+        label.setTextFill(MUTED_TEXT_COLOR);
+        return label;
     }
 
     private InlineCssTextArea createDiffArea() {
@@ -316,8 +338,48 @@ public class UniversalDiffApp extends Application {
             } else {
                 viewModel.rightPathProperty().set(chosen.toPath());
             }
-            renderDiffColumns();
+            showSingleFilePreview(isLeft ? DiffSide.LEFT : DiffSide.RIGHT, chosen.toPath());
+            Path left = viewModel.leftPathProperty().get();
+            Path right = viewModel.rightPathProperty().get();
+            if (left != null && right != null) {
+                runComparison();
+            } else {
+                if (isLeft && viewModel.rightPathProperty().get() == null) {
+                    showMessage(rightTextArea, "Select right file to compare.", STYLE_TEXT_MUTED);
+                }
+                if (!isLeft && viewModel.leftPathProperty().get() == null) {
+                    showMessage(leftTextArea, "Select left file to compare.", STYLE_TEXT_MUTED);
+                }
+            }
         }
+    }
+
+    private void showSingleFilePreview(DiffSide side, Path path) {
+        cancelCurrentRender();
+        try {
+            FormatType formatType = fileTypeDetector.detect(path).getFormatType();
+            updateFormatBadge(side, formatType);
+            String content = readRawContent(path, formatType);
+            InlineCssTextArea area = areaFor(side);
+            Platform.runLater(() -> {
+                area.replaceText(content);
+                if (!content.isEmpty()) {
+                    area.setStyle(0, content.length(), STYLE_TEXT_NORMAL);
+                }
+            });
+        } catch (IOException ex) {
+            log.error("Failed to preview {}", path, ex);
+            showError("Preview error", ex);
+        }
+    }
+
+    private String readRawContent(Path path, FormatType formatType) throws IOException {
+        byte[] bytes = Files.readAllBytes(path);
+        if (formatType == FormatType.BIN || formatType == FormatType.HEX) {
+            return new String(bytes, StandardCharsets.ISO_8859_1);
+        }
+        Charset encoding = encodingDetector.detect(path);
+        return new String(bytes, encoding);
     }
 
     private void runComparison() {
@@ -376,10 +438,14 @@ public class UniversalDiffApp extends Application {
             return;
         }
 
+        ComparisonSession session = sessionOpt.get();
+        updateFormatBadge(DiffSide.LEFT, session.getLeft().getFormatType());
+        updateFormatBadge(DiffSide.RIGHT, session.getRight().getFormatType());
+
         showMessage(leftTextArea, "Preparing diff...", STYLE_TEXT_INFO);
         showMessage(rightTextArea, "Preparing diff...", STYLE_TEXT_INFO);
 
-        currentRenderTask = new DiffStreamTask(sessionOpt.get());
+        currentRenderTask = new DiffStreamTask(session);
         currentRenderTask.setOnFailed(e -> {
             Throwable failure = currentRenderTask.getException();
             if (!(failure instanceof CancellationException)) {
@@ -923,6 +989,28 @@ public class UniversalDiffApp extends Application {
                     default -> "";
                 })
                 .orElse(".txt");
+    }
+
+    private void updateFormatBadge(DiffSide side, FormatType formatType) {
+        String text = "Format: " + switch (formatType) {
+            case JSON -> "JSON";
+            case XML -> "XML";
+            case CSV -> "CSV";
+            case BIN, HEX -> "Binary";
+            case TXT -> "Plain text";
+            case UNKNOWN -> "Unknown";
+            default -> formatType.name();
+        };
+        Platform.runLater(() -> {
+            Label target = side == DiffSide.LEFT ? leftFormatLabel : rightFormatLabel;
+            if (target != null) {
+                target.setText(text);
+            }
+        });
+    }
+
+    private InlineCssTextArea areaFor(DiffSide side) {
+        return side == DiffSide.LEFT ? leftTextArea : rightTextArea;
     }
 
 }
