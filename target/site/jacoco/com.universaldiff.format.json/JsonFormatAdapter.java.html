@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JsonFormatAdapter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Universal Difference Checker</a> &gt; <a href="index.source.html" class="el_package">com.universaldiff.format.json</a> &gt; <span class="el_source">JsonFormatAdapter.java</span></div><h1>JsonFormatAdapter.java</h1><pre class="source lang-java linenums">package com.universaldiff.format.json;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.universaldiff.core.model.DiffResult;
+import com.universaldiff.core.model.FileDescriptor;
+import com.universaldiff.core.model.MergeDecision;
+import com.universaldiff.core.model.MergeResult;
+import com.universaldiff.core.model.NormalizedContent;
+import com.universaldiff.format.json.spi.JsonDiffer;
+import com.universaldiff.format.json.spi.JsonMerger;
+import com.universaldiff.format.json.spi.JsonNormalizer;
+import com.universaldiff.format.spi.FormatAdapter;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * Facade {@link FormatAdapter} that delegates JSON responsibilities to composable collaborators.
+ * The collaborators encapsulate parsing, diffing, and merging to keep this surface area compact.
+ */
+public final class JsonFormatAdapter implements FormatAdapter {
+
+    private final JsonNormalizer normalizer;
+    private final JsonDiffer differ;
+    private final JsonMerger merger;
+
+    public JsonFormatAdapter() {
+<span class="fc" id="L30">        this(true);</span>
+<span class="fc" id="L31">    }</span>
+
+<span class="fc" id="L33">    public JsonFormatAdapter(boolean ignoreKeyOrder) {</span>
+<span class="fc" id="L34">        ObjectMapper mapper = new ObjectMapper();</span>
+<span class="fc" id="L35">        this.normalizer = new JacksonTreeJsonNormalizer(mapper, ignoreKeyOrder);</span>
+<span class="fc" id="L36">        this.differ = new PathAwareJsonDiffer();</span>
+<span class="fc" id="L37">        this.merger = new PointerAwareJsonMerger(mapper);</span>
+<span class="fc" id="L38">    }</span>
+
+<span class="nc" id="L40">    public JsonFormatAdapter(JsonNormalizer normalizer, JsonDiffer differ, JsonMerger merger) {</span>
+<span class="nc" id="L41">        this.normalizer = Objects.requireNonNull(normalizer, &quot;normalizer&quot;);</span>
+<span class="nc" id="L42">        this.differ = Objects.requireNonNull(differ, &quot;differ&quot;);</span>
+<span class="nc" id="L43">        this.merger = Objects.requireNonNull(merger, &quot;merger&quot;);</span>
+<span class="nc" id="L44">    }</span>
+
+    @Override
+    public NormalizedContent normalize(FileDescriptor descriptor) throws IOException {
+<span class="fc" id="L48">        return normalizer.normalize(descriptor);</span>
+    }
+
+    @Override
+    public DiffResult diff(NormalizedContent left, NormalizedContent right) {
+<span class="fc" id="L53">        return differ.diff(left, right);</span>
+    }
+
+    @Override
+    public MergeResult merge(NormalizedContent left,
+                             NormalizedContent right,
+                             List&lt;MergeDecision&gt; decisions,
+                             Path outputPath) throws IOException {
+<span class="fc" id="L61">        return merger.merge(left, right, decisions, outputPath);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

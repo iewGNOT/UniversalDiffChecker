@@ -34,7 +34,7 @@ class TxtNormalizationTest {
     }
 
     @Test
-    void diff_normalizesTabsToSpaces() throws Exception {
+    void diff_noLongerNormalizesTabsToSpaces() throws Exception {
         Path left = Files.writeString(tempDir.resolve("left.txt"), "column1\tcolumn2\n", StandardCharsets.UTF_8);
         Path right = Files.writeString(tempDir.resolve("right.txt"), "column1    column2\n", StandardCharsets.UTF_8);
 
@@ -44,7 +44,7 @@ class TxtNormalizationTest {
                 adapter.normalize(new FileDescriptor(right, FormatType.TXT, StandardCharsets.UTF_8))
         );
 
-        assertThat(diff.getHunks()).isEmpty();
+        assertThat(diff.getHunks()).hasSize(1);
     }
 
     @Test

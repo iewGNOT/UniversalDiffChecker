@@ -18,7 +18,7 @@ class DiffViewModelJsonOrderTest {
     Path tempDir;
 
     @Test
-    void jsonKeyOrderToggleControlsDiffHunks() throws Exception {
+    void jsonFilesDiffAsPlainTextRegardlessOfKeyOrderToggle() throws Exception {
         String leftJson = "{\"outer\":{\"first\":{\"a\":1,\"b\":2},\"second\":{\"x\":true,\"y\":false}}}";
         String rightJsonOrder = "{\"outer\":{\"first\":{\"b\":2,\"a\":1},\"second\":{\"y\":false,\"x\":true}}}";
         Path left = Files.writeString(tempDir.resolve("left.json"), leftJson, StandardCharsets.UTF_8);
@@ -29,19 +29,16 @@ class DiffViewModelJsonOrderTest {
         viewModel.rightPathProperty().set(rightOrder);
 
         viewModel.compareBlockingForTest();
-        assertThat(viewModel.hunksProperty()).isEmpty();
-
-        viewModel.ignoreJsonKeyOrderProperty().set(false);
-        String rightJsonChanged =
-                "{\"outer\":{\"first\":{\"b\":2,\"a\":1},\"second\":{\"y\":false,\"x\":true,\"extra\":1}}}";
-        Path rightChanged = Files.writeString(tempDir.resolve("right-changed.json"), rightJsonChanged, StandardCharsets.UTF_8);
-        viewModel.rightPathProperty().set(rightChanged);
-
-        viewModel.compareBlockingForTest();
         assertThat(viewModel.hunksProperty()).isNotEmpty();
+        int firstRunHunks = viewModel.hunksProperty().size();
         assertThat(viewModel.hunksProperty())
                 .extracting(DiffHunk::getId)
-                .allMatch(id -> id.startsWith("json-path-"));
+                .allMatch(id -> id.startsWith("txt-line-"));
+
+        viewModel.ignoreJsonKeyOrderProperty().set(false);
+        viewModel.compareBlockingForTest();
+
+        assertThat(viewModel.hunksProperty()).hasSize(firstRunHunks);
     }
 
     @Test

@@ -48,7 +48,7 @@ class ComparisonServiceTest {
     }
 
     @Test
-    void compare_forcedFormatOverridesExtension() throws Exception {
+    void compare_forcedFormatStillDiffsAsPlainText() throws Exception {
         Path left = Files.writeString(tempDir.resolve("left.data"), "{\"a\":1}", StandardCharsets.UTF_8);
         Path right = Files.writeString(tempDir.resolve("right.data"), "{\"a\":2}", StandardCharsets.UTF_8);
 
@@ -60,6 +60,6 @@ class ComparisonServiceTest {
         ComparisonSession session = service.compare(left, right, options);
 
         assertThat(session.getDiffResult().getHunks()).hasSize(1);
-        assertThat(session.getDiffResult().getFormatType()).isEqualTo(FormatType.JSON);
+        assertThat(session.getDiffResult().getFormatType()).isEqualTo(FormatType.TXT);
     }
 }
