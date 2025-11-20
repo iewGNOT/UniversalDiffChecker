@@ -1,4 +1,4 @@
-﻿package com.universaldiff.app;
+package com.universaldiff.app;
 
 import com.universaldiff.core.model.ComparisonSession;
 import com.universaldiff.core.model.DiffHunk;
@@ -53,9 +53,11 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.IntFunction;
+import java.util.concurrent.Future;
+import java.util.function.Consumer;
 
 public class UniversalDiffApp extends Application {
 
@@ -64,6 +66,8 @@ public class UniversalDiffApp extends Application {
     private static final int BINARY_BYTES_PER_LINE = 16;
     private static final int TEXT_RENDER_LIMIT = 200_000;
     private static final int BINARY_RENDER_LIMIT = 131_072;
+    private static final int TEXT_STREAM_LINES = 400;
+    private static final int BINARY_STREAM_LINES = 200;
 
     private static final Font TITLE_FONT = Font.font("Segoe UI Semibold", 20);
     private static final Font SECTION_FONT = Font.font("Segoe UI Semibold", 15);
@@ -96,6 +100,8 @@ public class UniversalDiffApp extends Application {
         thread.setDaemon(true);
         return thread;
     });
+    private DiffStreamTask currentRenderTask;
+    private Future<?> currentRenderFuture;
 
     @Override
     public void start(Stage stage) {
@@ -118,7 +124,8 @@ public class UniversalDiffApp extends Application {
         stage.setScene(scene);
         stage.show();
 
-        renderDiffColumns();
+        showMessage(leftTextArea, "Load files and run Compare to see differences.", STYLE_TEXT_MUTED);
+        showMessage(rightTextArea, "Load files and run Compare to see differences.", STYLE_TEXT_MUTED);
     }
 
     private Node buildTitleBar() {
@@ -278,7 +285,8 @@ public class UniversalDiffApp extends Application {
         area.setStyle("-fx-font-family: 'Consolas'; -fx-font-size: 13px;");
         area.setFocusTraversable(false);
 
-        IntFunction<Node> baseFactory = LineNumberFactory.get(area);
+        LineNumberFactory.get(area);
+        var baseFactory = LineNumberFactory.get(area);
         area.setParagraphGraphicFactory(line -> {
             Node node = baseFactory.apply(line);
             if (node instanceof Label label) {
@@ -358,195 +366,143 @@ public class UniversalDiffApp extends Application {
     }
 
     private void renderDiffColumns() {
-        Task<DiffRenderResult> renderTask = new Task<>() {
-            @Override
-            protected DiffRenderResult call() throws Exception {
-                return buildRenderResult();
-            }
-        };
-        renderTask.setOnSucceeded(e -> {
-            DiffRenderResult result = renderTask.getValue();
-            Platform.runLater(() -> applyRenderResult(result));
-        });
-        renderTask.setOnFailed(e -> {
-            Throwable failure = renderTask.getException();
-            log.error("Failed to render diff columns", failure);
-            Platform.runLater(() -> showError("Render error", toException(failure)));
-        });
-        renderExecutor.submit(renderTask);
-    }
-
-    private DiffRenderResult buildRenderResult() throws IOException {
+        cancelCurrentRender();
         Optional<ComparisonSession> sessionOpt = viewModel.getCurrentSession();
         if (sessionOpt.isEmpty()) {
-            DiffAreaContent placeholder = placeholderContent("Load files and run Compare to see differences.");
-            return new DiffRenderResult(placeholder, placeholder);
+            showMessage(leftTextArea, "Load files and run Compare to see differences.", STYLE_TEXT_MUTED);
+            showMessage(rightTextArea, "Load files and run Compare to see differences.", STYLE_TEXT_MUTED);
+            return;
         }
 
-        ComparisonSession session = sessionOpt.get();
-        if (isBinaryFormat(session.getLeft().getFormatType())) {
+        showMessage(leftTextArea, "Preparing diff...", STYLE_TEXT_INFO);
+        showMessage(rightTextArea, "Preparing diff...", STYLE_TEXT_INFO);
+
+        currentRenderTask = new DiffStreamTask(sessionOpt.get());
+        currentRenderTask.setOnFailed(e -> {
+            Throwable failure = currentRenderTask.getException();
+            if (!(failure instanceof CancellationException)) {
+                log.error("Failed to render diff columns", failure);
+                Platform.runLater(() -> showError("Render error", toException(failure)));
+            }
+        });
+        currentRenderFuture = renderExecutor.submit(currentRenderTask);
+    }
+
+    private void cancelCurrentRender() {
+        if (currentRenderTask != null) {
+            currentRenderTask.cancel(true);
+            currentRenderTask = null;
+        }
+        if (currentRenderFuture != null) {
+            currentRenderFuture.cancel(true);
+            currentRenderFuture = null;
+        }
+    }
+
+    private void showMessage(InlineCssTextArea area, String message, String style) {
+        Platform.runLater(() -> {
+            area.replaceText(message);
+            if (!message.isEmpty()) {
+                area.setStyle(0, message.length(), style);
+            }
+        });
+    }
+
+    private void appendChunk(InlineCssTextArea area, String text, StyleSpans<String> spans) {
+        Platform.runLater(() -> {
+            int start = area.getLength();
+            area.appendText(text);
+            area.setStyleSpans(start, spans);
+        });
+    }
+
+    private class DiffStreamTask extends Task<Void> {
+
+        private final ComparisonSession session;
+
+        private DiffStreamTask(ComparisonSession session) {
+            this.session = session;
+        }
+
+        @Override
+        protected Void call() throws Exception {
+            if (isBinaryFormat(session.getLeft().getFormatType())) {
+                streamBinary();
+            } else {
+                streamText();
+            }
+            return null;
+        }
+
+        private void streamText() throws IOException {
+            clearForStreaming();
+            String leftText = String.join("\n", session.getLeftContent().getLogicalRecords());
+            String rightText = String.join("\n", session.getRightContent().getLogicalRecords());
+
+            boolean leftTruncated = leftText.length() > TEXT_RENDER_LIMIT;
+            boolean rightTruncated = rightText.length() > TEXT_RENDER_LIMIT;
+            String leftShown = leftTruncated ? leftText.substring(0, TEXT_RENDER_LIMIT) : leftText;
+            String rightShown = rightTruncated ? rightText.substring(0, TEXT_RENDER_LIMIT) : rightText;
+
+            TextChunkAppender leftAppender = new TextChunkAppender(leftTextArea, DiffSide.LEFT, TEXT_STREAM_LINES);
+            produceTextLines(leftShown, rightShown, line -> {
+                checkCancelled();
+                leftAppender.appendLine(line);
+            });
+            leftAppender.finish(leftTruncated, leftText.length(), leftShown.length());
+            if (!leftAppender.hasProducedContent() && !leftTruncated) {
+                showMessage(leftTextArea, "File is empty.", STYLE_TEXT_MUTED);
+            }
+
+            TextChunkAppender rightAppender = new TextChunkAppender(rightTextArea, DiffSide.RIGHT, TEXT_STREAM_LINES);
+            produceTextLines(rightShown, leftShown, line -> {
+                checkCancelled();
+                rightAppender.appendLine(line);
+            });
+            rightAppender.finish(rightTruncated, rightText.length(), rightShown.length());
+            if (!rightAppender.hasProducedContent() && !rightTruncated) {
+                showMessage(rightTextArea, "File is empty.", STYLE_TEXT_MUTED);
+            }
+        }
+
+        private void streamBinary() throws IOException {
+            clearForStreaming();
             BinarySlice leftSlice = readBinarySlice(session.getLeft().getPath());
             BinarySlice rightSlice = readBinarySlice(session.getRight().getPath());
 
-            List<BinaryLine> leftLines = buildBinaryLines(leftSlice.bytes(), rightSlice.bytes());
-            List<BinaryLine> rightLines = buildBinaryLines(rightSlice.bytes(), leftSlice.bytes());
-
-            DiffAreaContent leftContent = buildBinaryContent(leftLines, DiffSide.LEFT, leftSlice.truncated(), leftSlice.totalLength(), leftSlice.bytes().length);
-            DiffAreaContent rightContent = buildBinaryContent(rightLines, DiffSide.RIGHT, rightSlice.truncated(), rightSlice.totalLength(), rightSlice.bytes().length);
-            return new DiffRenderResult(leftContent, rightContent);
-        }
-
-        String leftText = String.join("\n", session.getLeftContent().getLogicalRecords());
-        String rightText = String.join("\n", session.getRightContent().getLogicalRecords());
-
-        boolean leftTruncated = leftText.length() > TEXT_RENDER_LIMIT;
-        boolean rightTruncated = rightText.length() > TEXT_RENDER_LIMIT;
-        String leftShown = leftTruncated ? leftText.substring(0, TEXT_RENDER_LIMIT) : leftText;
-        String rightShown = rightTruncated ? rightText.substring(0, TEXT_RENDER_LIMIT) : rightText;
-
-        List<TextLine> leftLines = buildTextLines(leftShown, rightShown);
-        List<TextLine> rightLines = buildTextLines(rightShown, leftShown);
-
-        DiffAreaContent leftContent = buildTextContent(leftLines, DiffSide.LEFT, leftTruncated, leftText.length(), leftShown.length());
-        DiffAreaContent rightContent = buildTextContent(rightLines, DiffSide.RIGHT, rightTruncated, rightText.length(), rightShown.length());
-        return new DiffRenderResult(leftContent, rightContent);
-    }
-
-    private DiffAreaContent buildTextContent(List<TextLine> lines, DiffSide side, boolean truncated, long totalLength, long shownLength) {
-        boolean completelyEmpty = lines.size() == 1 && lines.get(0).segments().isEmpty();
-        if (completelyEmpty && !truncated) {
-            return placeholderContent("File is empty.");
-        }
-
-        StringBuilder builder = new StringBuilder();
-        StyleSpansBuilder<String> spans = new StyleSpansBuilder<>();
-
-        for (int i = 0; i < lines.size(); i++) {
-            TextLine line = lines.get(i);
-            if (!line.segments().isEmpty()) {
-                for (Segment segment : line.segments()) {
-                    String text = segment.text();
-                    if (!text.isEmpty()) {
-                        builder.append(text);
-                        spans.add(resolveSegmentStyle(side, segment.type()), text.length());
-                    }
-                }
+            BinaryChunkAppender leftAppender = new BinaryChunkAppender(leftTextArea, DiffSide.LEFT, BINARY_STREAM_LINES);
+            streamBinaryLines(leftSlice.bytes(), rightSlice.bytes(), leftAppender);
+            leftAppender.finish(leftSlice.truncated(), leftSlice.totalLength(), leftSlice.bytes().length);
+            if (!leftAppender.hasProducedContent() && !leftSlice.truncated()) {
+                showMessage(leftTextArea, "Binary data is empty.", STYLE_TEXT_MUTED);
             }
-            if (i < lines.size() - 1) {
-                builder.append('\n');
-                spans.add(STYLE_TEXT_NORMAL, 1);
+
+            BinaryChunkAppender rightAppender = new BinaryChunkAppender(rightTextArea, DiffSide.RIGHT, BINARY_STREAM_LINES);
+            streamBinaryLines(rightSlice.bytes(), leftSlice.bytes(), rightAppender);
+            rightAppender.finish(rightSlice.truncated(), rightSlice.totalLength(), rightSlice.bytes().length);
+            if (!rightAppender.hasProducedContent() && !rightSlice.truncated()) {
+                showMessage(rightTextArea, "Binary data is empty.", STYLE_TEXT_MUTED);
             }
         }
 
-        if (builder.length() == 0 && !truncated) {
-            return placeholderContent("File contains only blank lines.");
+        private void clearForStreaming() {
+            Platform.runLater(() -> {
+                leftTextArea.clear();
+                rightTextArea.clear();
+            });
         }
 
-        if (truncated) {
-            appendTruncationMessage(builder, spans, false, totalLength, shownLength);
-        }
-
-        return new DiffAreaContent(builder.toString(), spans.create());
-    }
-
-    private DiffAreaContent buildBinaryContent(List<BinaryLine> lines, DiffSide side, boolean truncated, long totalLength, long shownLength) {
-        StringBuilder builder = new StringBuilder();
-        StyleSpansBuilder<String> spans = new StyleSpansBuilder<>();
-
-        for (int i = 0; i < lines.size(); i++) {
-            BinaryLine line = lines.get(i);
-            String offset = String.format("%08X  ", line.offset());
-            builder.append(offset);
-            spans.add(STYLE_BINARY_OFFSET, offset.length());
-
-            for (BinaryCell cell : line.cells()) {
-                String block = (cell.present() ? cell.hex() : "  ") + " ";
-                builder.append(block);
-                spans.add(resolveBinaryStyle(side, cell.diff() && cell.present()), block.length());
-            }
-
-            builder.append("|");
-            spans.add(STYLE_BINARY_OFFSET, 1);
-            for (BinaryCell cell : line.cells()) {
-                String ascii = cell.present() ? String.valueOf(cell.ascii()) : " ";
-                builder.append(ascii);
-                spans.add(resolveBinaryStyle(side, cell.diff() && cell.present()), ascii.length());
-            }
-            builder.append("|");
-            spans.add(STYLE_BINARY_OFFSET, 1);
-
-            if (i < lines.size() - 1) {
-                builder.append('\n');
-                spans.add(STYLE_TEXT_NORMAL, 1);
+        private void checkCancelled() {
+            if (isCancelled()) {
+                throw new CancellationException("render cancelled");
             }
         }
-
-        if (builder.length() == 0 && !truncated) {
-            return placeholderContent("Binary data is empty.");
-        }
-
-        if (truncated) {
-            appendTruncationMessage(builder, spans, true, totalLength, shownLength);
-        }
-
-        return new DiffAreaContent(builder.toString(), spans.create());
     }
 
-    private void appendTruncationMessage(StringBuilder builder, StyleSpansBuilder<String> spans,
-                                         boolean binary, long total, long shown) {
-        if (builder.length() > 0) {
-            builder.append('\n');
-            spans.add(STYLE_TEXT_NORMAL, 1);
-        }
-        String unit = binary ? "bytes" : "characters";
-        String message = String.format("\u2026 Showing first %,d of %,d %s for performance.", shown, total, unit);
-        builder.append(message);
-        spans.add(STYLE_TEXT_INFO, message.length());
-    }
-
-    private String resolveSegmentStyle(DiffSide side, SegmentType type) {
-        if (type == SegmentType.DIFF) {
-            return side == DiffSide.LEFT ? STYLE_DIFF_LEFT : STYLE_DIFF_RIGHT;
-        }
-        return STYLE_TEXT_NORMAL;
-    }
-
-    private String resolveBinaryStyle(DiffSide side, boolean diff) {
-        if (diff) {
-            return side == DiffSide.LEFT ? STYLE_DIFF_LEFT : STYLE_DIFF_RIGHT;
-        }
-        return STYLE_TEXT_NORMAL;
-    }
-
-    private void applyRenderResult(DiffRenderResult result) {
-        applyContent(leftTextArea, result.left());
-        applyContent(rightTextArea, result.right());
-    }
-
-    private void applyContent(InlineCssTextArea area, DiffAreaContent content) {
-        area.replaceText(content.text());
-        area.setStyleSpans(0, content.spans());
-        area.moveTo(0);
-    }
-
-    private DiffAreaContent placeholderContent(String message) {
-        StyleSpansBuilder<String> spans = new StyleSpansBuilder<>();
-        spans.add(STYLE_TEXT_MUTED, message.length());
-        return new DiffAreaContent(message, spans.create());
-    }
-
-    private boolean isBinaryFormat(FormatType formatType) {
-        return switch (formatType) {
-            case BIN, HEX -> true;
-            default -> false;
-        };
-    }
-
-    private List<TextLine> buildTextLines(String content, String counterpart) {
-        List<TextLine> lines = new ArrayList<>();
+    private void produceTextLines(String content, String counterpart, Consumer<TextLine> consumer) {
         if (content == null) {
-            lines.add(new TextLine(1, List.of()));
-            return lines;
+            consumer.accept(new TextLine(1, List.of()));
+            return;
         }
 
         int len = content.length();
@@ -564,7 +520,7 @@ public class UniversalDiffApp extends Application {
             }
             if (ch == '\n') {
                 flushSegment(currentSegments, buffer, currentType);
-                lines.add(new TextLine(lineNumber++, List.copyOf(currentSegments)));
+                consumer.accept(new TextLine(lineNumber++, List.copyOf(currentSegments)));
                 currentSegments.clear();
                 currentType = null;
                 continue;
@@ -580,15 +536,13 @@ public class UniversalDiffApp extends Application {
         }
 
         flushSegment(currentSegments, buffer, currentType);
-        lines.add(new TextLine(lineNumber, List.copyOf(currentSegments)));
-        return lines;
+        consumer.accept(new TextLine(lineNumber, List.copyOf(currentSegments)));
     }
 
-    private List<BinaryLine> buildBinaryLines(byte[] content, byte[] counterpart) {
-        List<BinaryLine> lines = new ArrayList<>();
+    private void streamBinaryLines(byte[] content, byte[] counterpart, BinaryChunkAppender appender) {
         int maxLength = Math.max(content.length, counterpart.length);
         for (int base = 0; base < maxLength; base += BINARY_BYTES_PER_LINE) {
-            List<BinaryCell> cells = new ArrayList<>();
+            List<BinaryCell> cells = new ArrayList<>(BINARY_BYTES_PER_LINE);
             for (int i = 0; i < BINARY_BYTES_PER_LINE; i++) {
                 int index = base + i;
                 if (index < content.length) {
@@ -601,12 +555,15 @@ public class UniversalDiffApp extends Application {
                     cells.add(new BinaryCell(index, "  ", ' ', false, false));
                 }
             }
-            lines.add(new BinaryLine(base, cells));
+            appender.appendLine(new BinaryLine(base, cells));
         }
-        if (lines.isEmpty()) {
-            lines.add(new BinaryLine(0, List.of()));
-        }
-        return lines;
+    }
+
+    private boolean isBinaryFormat(FormatType formatType) {
+        return switch (formatType) {
+            case BIN, HEX -> true;
+            default -> false;
+        };
     }
 
     private BinarySlice readBinarySlice(Path path) throws IOException {
@@ -641,19 +598,6 @@ public class UniversalDiffApp extends Application {
         }
     }
 
-    private String determineExtension() {
-        return viewModel.getCurrentSession()
-                .map(session -> switch (session.getLeft().getFormatType()) {
-                    case TXT -> ".txt";
-                    case CSV -> ".csv";
-                    case JSON -> ".json";
-                    case XML -> ".xml";
-                    case BIN, HEX -> ".bin";
-                    default -> "";
-                })
-                .orElse(".txt");
-    }
-
     private void showError(String title, Exception ex) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);
@@ -676,6 +620,7 @@ public class UniversalDiffApp extends Application {
 
     @Override
     public void stop() {
+        cancelCurrentRender();
         renderExecutor.shutdownNow();
     }
 
@@ -711,9 +656,192 @@ public class UniversalDiffApp extends Application {
         }
     }
 
-    private record DiffAreaContent(String text, StyleSpans<String> spans) {
+    private final class TextChunkAppender {
+        private final InlineCssTextArea area;
+        private final DiffSide side;
+        private final int linesPerChunk;
+
+        private StringBuilder textBuilder = new StringBuilder();
+        private StyleSpansBuilder<String> spansBuilder = new StyleSpansBuilder<>();
+        private int linesInChunk = 0;
+        private long totalLines = 0;
+        private boolean producedContent = false;
+
+        private TextChunkAppender(InlineCssTextArea area, DiffSide side, int linesPerChunk) {
+            this.area = area;
+            this.side = side;
+            this.linesPerChunk = linesPerChunk;
+        }
+
+        void appendLine(TextLine line) {
+            appendLineBreakIfNeeded();
+            if (line.segments().isEmpty()) {
+                producedContent = true;
+                totalLines++;
+                linesInChunk++;
+                if (linesInChunk >= linesPerChunk) {
+                    flush();
+                }
+                return;
+            }
+            for (Segment segment : line.segments()) {
+                String text = segment.text();
+                if (!text.isEmpty()) {
+                    textBuilder.append(text);
+                    spansBuilder.add(resolveSegmentStyle(side, segment.type()), text.length());
+                }
+            }
+            producedContent = true;
+            totalLines++;
+            linesInChunk++;
+            if (linesInChunk >= linesPerChunk) {
+                flush();
+            }
+        }
+
+        private void appendLineBreakIfNeeded() {
+            if (textBuilder.length() > 0) {
+                textBuilder.append('\n');
+                spansBuilder.add(STYLE_TEXT_NORMAL, 1);
+            } else if (totalLines > 0) {
+                textBuilder.append('\n');
+                spansBuilder.add(STYLE_TEXT_NORMAL, 1);
+            }
+        }
+
+        void finish(boolean truncated, long totalLength, long shownLength) {
+            flush();
+            if (truncated) {
+                appendInfoChunk(String.format("... Showing first %,d of %,d characters for performance.", shownLength, totalLength));
+            }
+        }
+
+        boolean hasProducedContent() {
+            return producedContent;
+        }
+
+        private void appendInfoChunk(String message) {
+            StyleSpansBuilder<String> infoSpans = new StyleSpansBuilder<>();
+            infoSpans.add(STYLE_TEXT_INFO, message.length());
+            appendChunk(area, message, infoSpans.create());
+        }
+
+        private void flush() {
+            if (textBuilder.length() == 0) {
+                linesInChunk = 0;
+                return;
+            }
+            StyleSpans<String> spans = spansBuilder.create();
+            appendChunk(area, textBuilder.toString(), spans);
+            textBuilder = new StringBuilder();
+            spansBuilder = new StyleSpansBuilder<>();
+            linesInChunk = 0;
+        }
     }
 
-    private record DiffRenderResult(DiffAreaContent left, DiffAreaContent right) {
+    private final class BinaryChunkAppender {
+        private final InlineCssTextArea area;
+        private final DiffSide side;
+        private final int linesPerChunk;
+
+        private StringBuilder textBuilder = new StringBuilder();
+        private StyleSpansBuilder<String> spansBuilder = new StyleSpansBuilder<>();
+        private int linesInChunk = 0;
+        private boolean producedContent = false;
+
+        private BinaryChunkAppender(InlineCssTextArea area, DiffSide side, int linesPerChunk) {
+            this.area = area;
+            this.side = side;
+            this.linesPerChunk = linesPerChunk;
+        }
+
+        void appendLine(BinaryLine line) {
+            if (textBuilder.length() > 0) {
+                textBuilder.append('\n');
+                spansBuilder.add(STYLE_TEXT_NORMAL, 1);
+            }
+
+            String offset = String.format("%08X  ", line.offset());
+            textBuilder.append(offset);
+            spansBuilder.add(STYLE_BINARY_OFFSET, offset.length());
+
+            for (BinaryCell cell : line.cells()) {
+                String block = (cell.present() ? cell.hex() : "  ") + " ";
+                textBuilder.append(block);
+                spansBuilder.add(resolveBinaryStyle(side, cell.diff() && cell.present()), block.length());
+            }
+
+            textBuilder.append("|");
+            spansBuilder.add(STYLE_BINARY_OFFSET, 1);
+            for (BinaryCell cell : line.cells()) {
+                String ascii = cell.present() ? String.valueOf(cell.ascii()) : " ";
+                textBuilder.append(ascii);
+                spansBuilder.add(resolveBinaryStyle(side, cell.diff() && cell.present()), ascii.length());
+            }
+            textBuilder.append("|");
+            spansBuilder.add(STYLE_BINARY_OFFSET, 1);
+
+            linesInChunk++;
+            producedContent = true;
+            if (linesInChunk >= linesPerChunk) {
+                flush();
+            }
+        }
+
+        void finish(boolean truncated, long totalLength, long shownLength) {
+            flush();
+            if (truncated) {
+                appendInfoChunk(String.format("... Showing first %,d of %,d bytes for performance.", shownLength, totalLength));
+            }
+        }
+
+        boolean hasProducedContent() {
+            return producedContent;
+        }
+
+        private void appendInfoChunk(String message) {
+            StyleSpansBuilder<String> builder = new StyleSpansBuilder<>();
+            builder.add(STYLE_TEXT_INFO, message.length());
+            appendChunk(area, message, builder.create());
+        }
+
+        private void flush() {
+            if (textBuilder.length() == 0) {
+                linesInChunk = 0;
+                return;
+            }
+            appendChunk(area, textBuilder.toString(), spansBuilder.create());
+            textBuilder = new StringBuilder();
+            spansBuilder = new StyleSpansBuilder<>();
+            linesInChunk = 0;
+        }
     }
+
+    private String resolveSegmentStyle(DiffSide side, SegmentType type) {
+        if (type == SegmentType.DIFF) {
+            return side == DiffSide.LEFT ? STYLE_DIFF_LEFT : STYLE_DIFF_RIGHT;
+        }
+        return STYLE_TEXT_NORMAL;
+    }
+
+    private String resolveBinaryStyle(DiffSide side, boolean diff) {
+        if (diff) {
+            return side == DiffSide.LEFT ? STYLE_DIFF_LEFT : STYLE_DIFF_RIGHT;
+        }
+        return STYLE_TEXT_NORMAL;
+    }
+
+    private String determineExtension() {
+        return viewModel.getCurrentSession()
+                .map(session -> switch (session.getLeft().getFormatType()) {
+                    case TXT -> ".txt";
+                    case CSV -> ".csv";
+                    case JSON -> ".json";
+                    case XML -> ".xml";
+                    case BIN, HEX -> ".bin";
+                    default -> "";
+                })
+                .orElse(".txt");
+    }
+
 }
