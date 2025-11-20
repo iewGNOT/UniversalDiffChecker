@@ -25,10 +25,11 @@ public interface ComparisonService {
 
     static ComparisonService createDefault(boolean ignoreJsonKeyOrder) {
         FormatAdapterRegistry registry = new InMemoryFormatAdapterRegistry();
-        registry.register(FormatType.TXT, new com.universaldiff.format.txt.TxtFormatAdapter());
-        registry.register(FormatType.CSV, new com.universaldiff.format.csv.CsvFormatAdapter());
-        registry.register(FormatType.JSON, new com.universaldiff.format.json.JsonFormatAdapter(ignoreJsonKeyOrder));
-        registry.register(FormatType.XML, new com.universaldiff.format.xml.XmlFormatAdapter());
+        com.universaldiff.format.txt.TxtFormatAdapter txtAdapter = new com.universaldiff.format.txt.TxtFormatAdapter();
+        registry.register(FormatType.TXT, txtAdapter);
+        registry.register(FormatType.CSV, txtAdapter);
+        registry.register(FormatType.JSON, txtAdapter);
+        registry.register(FormatType.XML, txtAdapter);
         registry.register(FormatType.BIN, new com.universaldiff.format.bin.BinaryFormatAdapter(FormatType.BIN));
         registry.register(FormatType.HEX, new com.universaldiff.format.bin.BinaryFormatAdapter(FormatType.HEX));
 

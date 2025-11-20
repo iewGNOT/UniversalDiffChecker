@@ -34,16 +34,12 @@ public class TxtFormatAdapter implements FormatAdapter {
         Charset encoding = descriptor.getEncoding();
         List<String> lines = new ArrayList<>();
         try (Stream<String> stream = Files.lines(descriptor.getPath(), encoding)) {
-            stream.map(this::normalizeLine).forEach(lines::add);
+            stream.forEach(lines::add);
         }
         return NormalizedContent.builder(FormatType.TXT)
                 .logicalRecords(lines)
                 .encoding(encoding)
                 .build();
-    }
-
-    private String normalizeLine(String line) {
-        return line.replace("\t", "    ");
     }
 
     @Override

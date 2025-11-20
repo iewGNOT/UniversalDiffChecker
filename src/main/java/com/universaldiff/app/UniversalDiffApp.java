@@ -1,5 +1,8 @@
 package com.universaldiff.app;
 
+import com.github.difflib.DiffUtils;
+import com.github.difflib.patch.AbstractDelta;
+import com.github.difflib.patch.Patch;
 import com.universaldiff.core.model.ComparisonSession;
 import com.universaldiff.core.model.DiffHunk;
 import com.universaldiff.core.model.FormatType;
@@ -57,7 +60,6 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.function.Consumer;
 
 public class UniversalDiffApp extends Application {
 
@@ -444,21 +446,19 @@ public class UniversalDiffApp extends Application {
             String leftShown = leftTruncated ? leftText.substring(0, TEXT_RENDER_LIMIT) : leftText;
             String rightShown = rightTruncated ? rightText.substring(0, TEXT_RENDER_LIMIT) : rightText;
 
+            List<String> leftLines = splitLines(leftShown);
+            List<String> rightLines = splitLines(rightShown);
+            Patch<String> patch = DiffUtils.diff(leftLines, rightLines);
+
             TextChunkAppender leftAppender = new TextChunkAppender(leftTextArea, DiffSide.LEFT, TEXT_STREAM_LINES);
-            produceTextLines(leftShown, rightShown, line -> {
-                checkCancelled();
-                leftAppender.appendLine(line);
-            });
+            emitLinesForSide(leftLines, rightLines, patch, leftAppender, DiffSide.LEFT, true);
             leftAppender.finish(leftTruncated, leftText.length(), leftShown.length());
             if (!leftAppender.hasProducedContent() && !leftTruncated) {
                 showMessage(leftTextArea, "File is empty.", STYLE_TEXT_MUTED);
             }
 
             TextChunkAppender rightAppender = new TextChunkAppender(rightTextArea, DiffSide.RIGHT, TEXT_STREAM_LINES);
-            produceTextLines(rightShown, leftShown, line -> {
-                checkCancelled();
-                rightAppender.appendLine(line);
-            });
+            emitLinesForSide(rightLines, leftLines, patch, rightAppender, DiffSide.RIGHT, false);
             rightAppender.finish(rightTruncated, rightText.length(), rightShown.length());
             if (!rightAppender.hasProducedContent() && !rightTruncated) {
                 showMessage(rightTextArea, "File is empty.", STYLE_TEXT_MUTED);
@@ -499,44 +499,125 @@ public class UniversalDiffApp extends Application {
         }
     }
 
-    private void produceTextLines(String content, String counterpart, Consumer<TextLine> consumer) {
-        if (content == null) {
-            consumer.accept(new TextLine(1, List.of()));
-            return;
+    private List<String> splitLines(String text) {
+        List<String> lines = new ArrayList<>();
+        if (text == null || text.isEmpty()) {
+            lines.add("");
+            return lines;
         }
+        int start = 0;
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            if (ch == '\r') {
+                addLineSegment(lines, text, start, i);
+                if (i + 1 < text.length() && text.charAt(i + 1) == '\n') {
+                    start = i + 2;
+                    i++;
+                } else {
+                    start = i + 1;
+                }
+            } else if (ch == '\n') {
+                addLineSegment(lines, text, start, i);
+                start = i + 1;
+            }
+        }
+        if (start <= text.length()) {
+            lines.add(text.substring(start));
+        }
+        if (lines.isEmpty()) {
+            lines.add("");
+        }
+        return lines;
+    }
 
-        int len = content.length();
-        int otherLen = counterpart == null ? 0 : counterpart.length();
+    private void addLineSegment(List<String> lines, String text, int start, int end) {
+        if (start > text.length()) {
+            lines.add("");
+        } else {
+            lines.add(text.substring(Math.min(start, text.length()), Math.min(end, text.length())));
+        }
+    }
 
-        List<Segment> currentSegments = new ArrayList<>();
-        SegmentType currentType = null;
-        StringBuilder buffer = new StringBuilder();
+    private void emitLinesForSide(List<String> baseLines,
+                                  List<String> otherLines,
+                                  Patch<String> patch,
+                                  TextChunkAppender appender,
+                                  DiffSide side,
+                                  boolean treatPatchAsSource) {
+        int baseIndex = 0;
+        int otherIndex = 0;
         int lineNumber = 1;
 
-        for (int i = 0; i < len; i++) {
-            char ch = content.charAt(i);
-            if (ch == '\r') {
-                continue;
-            }
-            if (ch == '\n') {
-                flushSegment(currentSegments, buffer, currentType);
-                consumer.accept(new TextLine(lineNumber++, List.copyOf(currentSegments)));
-                currentSegments.clear();
-                currentType = null;
-                continue;
+        for (AbstractDelta<String> delta : patch.getDeltas()) {
+            int basePos = treatPatchAsSource ? delta.getSource().getPosition() : delta.getTarget().getPosition();
+            int otherPos = treatPatchAsSource ? delta.getTarget().getPosition() : delta.getSource().getPosition();
+
+            while (baseIndex < basePos && baseIndex < baseLines.size()) {
+                String text = baseLines.get(baseIndex++);
+                String counterpart = otherIndex < otherLines.size() ? otherLines.get(otherIndex++) : "";
+                appender.appendLine(new TextLine(lineNumber++, buildSegmentsForLine(text, counterpart)));
             }
 
-            boolean match = i < otherLen && counterpart.charAt(i) == ch;
+            if (otherIndex < otherPos) {
+                otherIndex = otherPos;
+            }
+
+            List<String> baseDelta = treatPatchAsSource ? delta.getSource().getLines() : delta.getTarget().getLines();
+            List<String> otherDelta = treatPatchAsSource ? delta.getTarget().getLines() : delta.getSource().getLines();
+            lineNumber = emitDeltaLines(baseDelta, otherDelta, appender, side, lineNumber);
+
+            baseIndex = basePos + baseDelta.size();
+            otherIndex = otherPos + otherDelta.size();
+        }
+
+        while (baseIndex < baseLines.size()) {
+            String text = baseLines.get(baseIndex++);
+            String counterpart = otherIndex < otherLines.size() ? otherLines.get(otherIndex++) : "";
+            appender.appendLine(new TextLine(lineNumber++, buildSegmentsForLine(text, counterpart)));
+        }
+    }
+
+    private int emitDeltaLines(List<String> baseDelta,
+                               List<String> otherDelta,
+                               TextChunkAppender appender,
+                               DiffSide side,
+                               int lineNumber) {
+        int max = Math.max(baseDelta.size(), otherDelta.size());
+        for (int i = 0; i < max; i++) {
+            String text = i < baseDelta.size() ? baseDelta.get(i) : "";
+            String counterpart = i < otherDelta.size() ? otherDelta.get(i) : "";
+            appender.appendLine(new TextLine(lineNumber++, buildSegmentsForLine(text, counterpart)));
+        }
+        return lineNumber;
+    }
+
+    private List<Segment> buildSegmentsForLine(String text, String counterpart) {
+        String primary = text == null ? "" : text;
+        String other = counterpart == null ? "" : counterpart;
+        if (primary.isEmpty() && other.isEmpty()) {
+            return List.of(new Segment(" ", SegmentType.MATCH));
+        }
+        if (primary.equals(other)) {
+            return List.of(new Segment(primary.isEmpty() ? " " : primary, SegmentType.MATCH));
+        }
+        List<Segment> segments = new ArrayList<>();
+        SegmentType currentType = null;
+        StringBuilder buffer = new StringBuilder();
+        for (int i = 0; i < primary.length(); i++) {
+            char ch = primary.charAt(i);
+            boolean match = i < other.length() && other.charAt(i) == ch;
             SegmentType type = match ? SegmentType.MATCH : SegmentType.DIFF;
             if (type != currentType) {
-                flushSegment(currentSegments, buffer, currentType);
+                flushSegment(segments, buffer, currentType);
                 currentType = type;
             }
             buffer.append(ch);
         }
-
-        flushSegment(currentSegments, buffer, currentType);
-        consumer.accept(new TextLine(lineNumber, List.copyOf(currentSegments)));
+        flushSegment(segments, buffer, currentType);
+        if (segments.isEmpty()) {
+            segments.add(new Segment(" ", SegmentType.DIFF));
+        }
+        return segments;
     }
 
     private void streamBinaryLines(byte[] content, byte[] counterpart, BinaryChunkAppender appender) {
