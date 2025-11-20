@@ -339,17 +339,10 @@ public class UniversalDiffApp extends Application {
                 viewModel.rightPathProperty().set(chosen.toPath());
             }
             showSingleFilePreview(isLeft ? DiffSide.LEFT : DiffSide.RIGHT, chosen.toPath());
-            Path left = viewModel.leftPathProperty().get();
-            Path right = viewModel.rightPathProperty().get();
-            if (left != null && right != null) {
-                runComparison();
-            } else {
-                if (isLeft && viewModel.rightPathProperty().get() == null) {
-                    showMessage(rightTextArea, "Select right file to compare.", STYLE_TEXT_MUTED);
-                }
-                if (!isLeft && viewModel.leftPathProperty().get() == null) {
-                    showMessage(leftTextArea, "Select left file to compare.", STYLE_TEXT_MUTED);
-                }
+            if (isLeft && viewModel.rightPathProperty().get() == null) {
+                showMessage(rightTextArea, "Select right file to compare.", STYLE_TEXT_MUTED);
+            } else if (!isLeft && viewModel.leftPathProperty().get() == null) {
+                showMessage(leftTextArea, "Select left file to compare.", STYLE_TEXT_MUTED);
             }
         }
     }
@@ -383,6 +376,12 @@ public class UniversalDiffApp extends Application {
     }
 
     private void runComparison() {
+        Path left = viewModel.leftPathProperty().get();
+        Path right = viewModel.rightPathProperty().get();
+        if (left == null || right == null) {
+            showError("Comparison error", new IllegalStateException("Select both files before comparing."));
+            return;
+        }
         Task<Void> comparisonTask = new Task<>() {
             @Override
             protected Void call() throws Exception {
