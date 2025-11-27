@@ -1,57 +1,92 @@
-# Universal Difference Checker (UDC)
+# Universal Difference Checker
 
-Universal Difference Checker is a Java 17 / JavaFX desktop application for engineers, analysts, and QA teams who need a consistent environment to inspect, diff, and merge files ranging from plain text to binary payloads. UDC focuses on accuracy, performance, and transparency—files are shown exactly as stored on disk, and structured formats (XML, JSON, CSV) are never reformatted before display.
+## Description
 
-## Key Capabilities
-- **Immediate single‑pane preview** – Load either side and UDC streams the raw file straight into a RichTextFX `StyledTextArea`, tagging the detected format (XML, JSON, CSV, Text, Binary, Unknown). No diff is required to inspect content.
-- **High‑volume diff engine** – Once both files are loaded, the app leverages a streaming diff pipeline (Myers line diff + chunked rendering) to keep the UI responsive even on very large inputs.
-- **Binary awareness** – BIN/HEX assets show offsets, hex bytes, and ASCII side‑by‑side with highlighting for differing cells.
-- **Guided merge workflow** – Choose merge strategies (take‑left, take‑right, manual) per run, and export merged output while preserving the original encoding.
-- **Format auto‑detection** – A combined extension/content heuristic reports the most likely format so reviewers understand what they are looking at before diffing.
+Universal Difference Checker (UDC) is a Java 17 / JavaFX desktop tool built to give engineers and analysts a precise, format‑aware way to inspect and merge files without ever altering their original structure. I created UDC because switching between disparate diff utilities made it impossible to review mixed workloads—JSON APIs, XML configs, CSV exports, and raw binaries—in one consistent environment. UDC solves that by streaming each file exactly as it exists on disk into a RichTextFX viewer, tagging the detected format, and only running a diff when both sides are loaded.
 
-## Getting Started
+## Table of Contents
 
-### Prerequisites
-- Windows 10 or later (JavaFX dependencies use the `win` classifier – adjust classifiers for other platforms)
-- JDK 17 or newer
-- Maven 3.9 or newer
+- [Installation](#installation)
+- [Usage](#usage)
+- [Credits](#credits)
+- [License](#license)
+- [Badges](#badges)
+- [Features](#features)
+- [How to Contribute](#how-to-contribute)
+- [Tests](#tests)
 
-### Build & Run
+## Installation
+
+1. Ensure the following prerequisites are installed:
+   - Windows 10 or later (JavaFX dependencies use the `win` classifier; adjust for other OSes).
+   - JDK 17+
+   - Maven 3.9+
+2. Clone the repository:
+   ```bash
+   git clone https://github.com/<your-org>/universal-diff-checker.git
+   cd universal-diff-checker
+   ```
+3. Build the project:
+   ```bash
+   mvn clean install
+   ```
+
+## Usage
+
+1. Launch the JavaFX UI:
+   ```bash
+   mvn javafx:run
+   ```
+2. Use the toolbar to select a left or right file. Each file appears immediately in its pane with a “Format: …” badge so you know whether you’re looking at XML, JSON, CSV, plain text, or binary data.
+3. After both files are loaded, click **Compare** (enabled only when both sides are present). The streaming diff renderer highlights line‑level or byte‑level differences without reformatting the source.
+4. Use the merge controls to apply a “take left/right” strategy and export the result. Binary files show offsets/hex/ASCII, while text panes remain selectable for copy/paste.
+
+> _Tip:_ Add screenshots to `assets/images` and reference them with Markdown syntax:
+> ```md
+> ![Diff preview](assets/images/diff-preview.png)
+> ```
+
+## Credits
+
+- Project lead & primary developer: [Your Name](https://github.com/your-handle)
+- Libraries:
+  - [RichTextFX](https://github.com/TomasMikula/RichTextFX)
+  - [java-diff-utils](https://github.com/java-diff-utils/java-diff-utils)
+  - [JaCoCo](https://www.jacoco.org/)
+
+## License
+
+Distributed under the MIT License. See `LICENSE` for details. For help choosing a different license, visit [choosealicense.com](https://choosealicense.com/).
+
+---
+
+## Badges
+
+![Java](https://img.shields.io/badge/java-17-orange) ![JavaFX](https://img.shields.io/badge/JavaFX-21-blue)
+
+## Features
+
+- Immediate file preview with format detection—no compare button needed for single-file review.
+- Streaming diff engine (Myers + RichTextFX chunking) keeps the UI fluid on large files.
+- Binary diff view with offset, hex, and ASCII highlighting.
+- Merge workflow with configurable strategies and preserved encodings.
+- BOM-aware file loading and strict “no normalization” handling for XML/JSON/CSV files.
+
+## How to Contribute
+
+1. Fork the repository and create a feature branch: `git checkout -b feature/your-feature`.
+2. Follow the existing code style and include RichTextFX-based UI updates where relevant.
+3. Write or update unit tests.
+4. Submit a pull request referencing related issues.
+
+Consider adopting the [Contributor Covenant](https://www.contributor-covenant.org/) if you open the project to outside contributors.
+
+## Tests
+
+Run the automated suite (JaCoCo instrumentation included) with:
+
 ```bash
-mvn clean install
-mvn javafx:run
+mvn clean test
 ```
-`mvn javafx:run` launches the desktop UI. Use the toolbar to load left/right files. A single file immediately appears in the associated pane with its format badge. Selecting the second file automatically switches into diff mode; use the `Compare` button if you need to regenerate the diff after toggling options such as JSON key‑order handling.
 
-### Testing & Coverage
-```bash
-mvn clean test         # executes JUnit suites with JaCoCo attached
-mvn verify             # runs tests + generates HTML/XML coverage under target/site/jacoco
-```
-JaCoCo thresholds (80 % line / 70 % branch) are enforced during `mvn verify`. Open `target/site/jacoco/index.html` to review coverage drill‑downs.
-
-## Project Structure
-- `src/main/java/com/universaldiff/app` – JavaFX UI shell (toolbars, RichTextFX panes, streaming renderer).
-- `src/main/java/com/universaldiff/core` – Comparison/merge services, file loading, format detection, data models.
-- `src/main/java/com/universaldiff/format` – Pluggable adapters for TXT, BIN/HEX, and other formats. XML/JSON/CSV routes currently point to the TXT adapter to avoid normalization.
-- `src/test/java` – Unit tests for adapters, detectors, and service wiring (extend with regression suites as needed).
-
-## Extending UDC
-- Implement the `FormatAdapter` SPI to introduce additional formats or bespoke handling. Register adapters via `ComparisonService.createDefault(...)` or provide your own service factory.
-- `DiffViewModel` exposes properties for file paths, options, and diff hunks; bind additional UI controls or persistence features (e.g., MRU lists, recipe saves) through this layer.
-- RichTextFX rendering is centralized in `UniversalDiffApp`. Add custom styles or annotations by extending the chunk appenders or StyleSpan builders.
-
-## Known Limitations
-- Manual merge decisions still accept plain text; richer editors for XML/JSON trees are planned.
-- CSV heuristics assume consistent headers across both files.
-- Multi‑hundred‑MB binaries are rendered via chunked streaming, but additional optimization (memory‑mapped IO) is on the roadmap.
-- JavaFX dependencies are configured for Windows only; adjust classifiers to run on Linux/macOS.
-
-## Roadmap Highlights
-1. Multi‑pane merge decisions with per‑hunk “take left/right” toggles.
-2. Configurable rules for whitespace/number equivalence in text formats.
-3. Memory‑mapped binary renderer for extremely large binaries.
-4. Session persistence (recent files, comparison presets).
-5. Integration tests against a curated corpus of structured and binary files.
-
-Contributions are welcome—open issues or pull requests with clear reproduction steps and screenshots where applicable.
+This command compiles sources, runs the JUnit 5 tests, and outputs coverage reports to `target/site/jacoco`. Use the results to ensure new features maintain or improve test coverage.
