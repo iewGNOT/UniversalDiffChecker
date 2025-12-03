@@ -1,7 +1,9 @@
 package com.universaldiff.format.txt;
 
+import com.universaldiff.core.model.DiffFragment;
 import com.universaldiff.core.model.DiffHunk;
 import com.universaldiff.core.model.DiffResult;
+import com.universaldiff.core.model.DiffSide;
 import com.universaldiff.core.model.DiffType;
 import com.universaldiff.core.model.FileDescriptor;
 import com.universaldiff.core.model.FormatType;
@@ -108,5 +110,36 @@ class TxtFormatAdapterTest {
 
         assertThat(Files.readAllLines(output, StandardCharsets.UTF_8))
                 .containsExactly("R1", "L2", "manual");
+    }
+
+    @Test
+    void diff_interleavedInsertionsProduceOnlyInsertHunks() {
+        TxtFormatAdapter adapter = new TxtFormatAdapter();
+        NormalizedContent left = NormalizedContent.builder(FormatType.TXT)
+                .logicalRecords(List.of("A", "B", "C", "D", "E", "F", "G"))
+                .build();
+        NormalizedContent right = NormalizedContent.builder(FormatType.TXT)
+                .logicalRecords(List.of("A", "X", "B", "Y", "C", "Z", "D", "E", "F", "G"))
+                .build();
+
+        DiffResult diff = adapter.diff(left, right);
+
+        assertThat(diff.getHunks())
+                .hasSize(3)
+                .extracting(DiffHunk::getType)
+                .containsOnly(DiffType.INSERT);
+
+        assertThat(diff.getHunks())
+                .extracting(DiffHunk::getId)
+                .containsExactly("txt-line-2", "txt-line-3", "txt-line-4");
+
+        assertThat(diff.getHunks())
+                .flatExtracting(DiffHunk::getFragments)
+                .allSatisfy(fragment -> assertThat(fragment.getSide()).isEqualTo(DiffSide.RIGHT));
+
+        assertThat(diff.getHunks())
+                .flatExtracting(DiffHunk::getFragments)
+                .extracting(DiffFragment::getContent)
+                .containsExactly("X", "Y", "Z");
     }
 }
