@@ -28,21 +28,14 @@ public class DiffViewModel {
     private final ObjectProperty<Path> leftPath = new SimpleObjectProperty<>();
     private final ObjectProperty<Path> rightPath = new SimpleObjectProperty<>();
     private final ObservableList<DiffHunk> hunks = FXCollections.observableArrayList();
-    private final BooleanProperty ignoreJsonKeyOrder = new SimpleBooleanProperty(true);
     private ComparisonSession currentSession;
 
     public DiffViewModel() {
-        this(true);
+        rebuildComparisonService();
     }
 
-    public DiffViewModel(boolean ignoreJsonKeyOrder) {
-        rebuildComparisonService(ignoreJsonKeyOrder);
-        this.ignoreJsonKeyOrder.set(ignoreJsonKeyOrder);
-        this.ignoreJsonKeyOrder.addListener((obs, oldVal, newVal) -> rebuildComparisonService(newVal));
-    }
-
-    private void rebuildComparisonService(boolean ignoreOrder) {
-        this.comparisonService = ComparisonService.createDefault(ignoreOrder);
+    private void rebuildComparisonService() {
+        this.comparisonService = ComparisonService.createDefault();
     }
 
     public ObjectProperty<Path> leftPathProperty() {
@@ -51,10 +44,6 @@ public class DiffViewModel {
 
     public ObjectProperty<Path> rightPathProperty() {
         return rightPath;
-    }
-
-    public BooleanProperty ignoreJsonKeyOrderProperty() {
-        return ignoreJsonKeyOrder;
     }
 
     public ObservableList<DiffHunk> hunksProperty() {

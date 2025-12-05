@@ -22,7 +22,6 @@ import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
@@ -179,11 +178,6 @@ public class UniversalDiffApp extends Application {
         HBox fileControls = new HBox(openLeft, openRight, compareButton);
         fileControls.setSpacing(8);
 
-        CheckBox ignoreJsonCheck = new CheckBox("Ignore JSON key order");
-        ignoreJsonCheck.setFont(CONTROL_FONT);
-        ignoreJsonCheck.setTextFill(TEXT_COLOR);
-        ignoreJsonCheck.selectedProperty().bindBidirectional(viewModel.ignoreJsonKeyOrderProperty());
-
         ComboBox<MergeChoice> mergeStrategy = new ComboBox<>();
         mergeStrategy.getItems().addAll(MergeChoice.TAKE_LEFT, MergeChoice.TAKE_RIGHT, MergeChoice.MANUAL);
         mergeStrategy.getSelectionModel().select(MergeChoice.TAKE_RIGHT);
@@ -234,7 +228,7 @@ public class UniversalDiffApp extends Application {
         bar.setPadding(new Insets(16));
         bar.setBackground(CARD_BACKGROUND);
         bar.setBorder(CARD_BORDER);
-        bar.getChildren().addAll(fileControls, new Separator(Orientation.VERTICAL), mergeBox, spacer, ignoreJsonCheck);
+        bar.getChildren().addAll(fileControls, new Separator(Orientation.VERTICAL), mergeBox, spacer);
         return bar;
     }
 

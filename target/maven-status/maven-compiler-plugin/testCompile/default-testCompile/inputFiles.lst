@@ -17,7 +17,6 @@ E:\18145\Projects\UniversalDiff\src\test\java\com\universaldiff\core\detect\Defa
 E:\18145\Projects\UniversalDiff\src\test\java\com\universaldiff\format\spi\InMemoryFormatAdapterRegistryTest.java
 E:\18145\Projects\UniversalDiff\src\test\java\com\universaldiff\core\ComparisonServiceErrorTest.java
 E:\18145\Projects\UniversalDiff\src\test\java\com\universaldiff\format\json\PointerAwareJsonMergerTest.java
-E:\18145\Projects\UniversalDiff\src\test\java\com\universaldiff\ui\viewmodel\DiffViewModelJsonOrderTest.java
 E:\18145\Projects\UniversalDiff\src\test\java\com\universaldiff\format\json\JsonMergeManualTest.java
 E:\18145\Projects\UniversalDiff\src\test\java\com\universaldiff\format\csv\CsvFormatAdapterTest.java
 E:\18145\Projects\UniversalDiff\src\test\java\com\universaldiff\format\xml\XmlFormatAdapterTest.java

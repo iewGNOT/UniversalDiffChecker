@@ -100,6 +100,25 @@ class DiffViewModelTest {
         assertThat(viewModel.readFilePreview(previewFile))
                 .containsExactly("a", "b");
     }
+
+    @Test
+    void compareKeepsExistingHunksWhenMissingFileSelected() throws Exception {
+        Path left = Files.writeString(tempDir.resolve("left.txt"), "a\nb\n", StandardCharsets.UTF_8);
+        Path right = Files.writeString(tempDir.resolve("right.txt"), "a\nc\n", StandardCharsets.UTF_8);
+
+        DiffViewModel viewModel = new DiffViewModel();
+        viewModel.leftPathProperty().set(left);
+        viewModel.rightPathProperty().set(right);
+
+        viewModel.compareBlockingForTest();
+        assertThat(viewModel.hunksProperty()).isNotEmpty();
+
+        viewModel.rightPathProperty().set(tempDir.resolve("missing.txt"));
+
+        assertThatThrownBy(viewModel::compareBlockingForTest).isInstanceOf(java.io.IOException.class);
+
+        assertThat(viewModel.hunksProperty()).isNotEmpty();
+    }
 }
 
 
