@@ -384,6 +384,9 @@ public class UniversalDiffApp extends Application {
             showError("Comparison error", new IllegalStateException("Select both files before comparing."));
             return;
         }
+        if (!ensureMatchingFormats(left, right)) {
+            return;
+        }
         Task<Void> comparisonTask = new Task<>() {
             @Override
             protected Void call() throws Exception {
@@ -400,6 +403,23 @@ public class UniversalDiffApp extends Application {
         Thread thread = new Thread(comparisonTask, "diff-compare");
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private boolean ensureMatchingFormats(Path left, Path right) {
+        FormatType leftFormat = fileTypeDetector.detect(left).getFormatType();
+        FormatType rightFormat = fileTypeDetector.detect(right).getFormatType();
+        if (leftFormat == FormatType.UNKNOWN || rightFormat == FormatType.UNKNOWN) {
+            return true;
+        }
+        if (leftFormat != rightFormat) {
+            String message = String.format(
+                    "Left file is detected as %s while the right file is %s. Select files with matching formats.",
+                    describeFormat(leftFormat),
+                    describeFormat(rightFormat));
+            showError("Format mismatch", new IllegalStateException(message));
+            return false;
+        }
+        return true;
     }
 
     private void runMerge(Stage stage, MergeChoice choice) {
@@ -993,7 +1013,17 @@ public class UniversalDiffApp extends Application {
     }
 
     private void updateFormatBadge(DiffSide side, FormatType formatType) {
-        String text = "Format: " + switch (formatType) {
+        String text = "Format: " + describeFormat(formatType);
+        Platform.runLater(() -> {
+            Label target = side == DiffSide.LEFT ? leftFormatLabel : rightFormatLabel;
+            if (target != null) {
+                target.setText(text);
+            }
+        });
+    }
+
+    private String describeFormat(FormatType formatType) {
+        return switch (formatType) {
             case JSON -> "JSON";
             case XML -> "XML";
             case CSV -> "CSV";
@@ -1002,12 +1032,6 @@ public class UniversalDiffApp extends Application {
             case UNKNOWN -> "Unknown";
             default -> formatType.name();
         };
-        Platform.runLater(() -> {
-            Label target = side == DiffSide.LEFT ? leftFormatLabel : rightFormatLabel;
-            if (target != null) {
-                target.setText(text);
-            }
-        });
     }
 
     private InlineCssTextArea areaFor(DiffSide side) {

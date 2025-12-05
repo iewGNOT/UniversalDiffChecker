@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TxtFormatAdapter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Universal Difference Checker</a> &gt; <a href="index.source.html" class="el_package">com.universaldiff.format.txt</a> &gt; <span class="el_source">TxtFormatAdapter.java</span></div><h1>TxtFormatAdapter.java</h1><pre class="source lang-java linenums">package com.universaldiff.format.txt;
 
+import com.github.difflib.DiffUtils;
+import com.github.difflib.patch.AbstractDelta;
+import com.github.difflib.patch.DeltaType;
+import com.github.difflib.patch.Patch;
 import com.universaldiff.core.model.DiffFragment;
 import com.universaldiff.core.model.DiffHunk;
 import com.universaldiff.core.model.DiffResult;
@@ -7,13 +11,10 @@ import com.universaldiff.core.model.DiffSide;
 import com.universaldiff.core.model.DiffType;
 import com.universaldiff.core.model.FileDescriptor;
 import com.universaldiff.core.model.FormatType;
-import com.universaldiff.core.model.MergeChoice;
 import com.universaldiff.core.model.MergeDecision;
 import com.universaldiff.core.model.MergeResult;
 import com.universaldiff.core.model.NormalizedContent;
 import com.universaldiff.format.spi.FormatAdapter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -22,62 +23,56 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
-<span class="fc" id="L28">public class TxtFormatAdapter implements FormatAdapter {</span>
-
-<span class="fc" id="L30">    private static final Logger log = LoggerFactory.getLogger(TxtFormatAdapter.class);</span>
+<span class="fc" id="L32">public class TxtFormatAdapter implements FormatAdapter {</span>
 
     @Override
     public NormalizedContent normalize(FileDescriptor descriptor) throws IOException {
-<span class="fc" id="L34">        Charset encoding = descriptor.getEncoding();</span>
-<span class="fc" id="L35">        List&lt;String&gt; lines = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L36">        try (Stream&lt;String&gt; stream = Files.lines(descriptor.getPath(), encoding)) {</span>
-<span class="fc" id="L37">            stream.forEach(lines::add);</span>
+<span class="fc" id="L36">        Charset encoding = descriptor.getEncoding();</span>
+<span class="fc" id="L37">        List&lt;String&gt; lines = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L38">        try (Stream&lt;String&gt; stream = Files.lines(descriptor.getPath(), encoding)) {</span>
+<span class="fc" id="L39">            stream.forEach(lines::add);</span>
         }
-<span class="fc" id="L39">        return NormalizedContent.builder(FormatType.TXT)</span>
-<span class="fc" id="L40">                .logicalRecords(lines)</span>
-<span class="fc" id="L41">                .encoding(encoding)</span>
-<span class="fc" id="L42">                .build();</span>
+<span class="fc" id="L41">        return NormalizedContent.builder(FormatType.TXT)</span>
+<span class="fc" id="L42">                .logicalRecords(lines)</span>
+<span class="fc" id="L43">                .encoding(encoding)</span>
+<span class="fc" id="L44">                .build();</span>
     }
 
     @Override
     public DiffResult diff(NormalizedContent left, NormalizedContent right) {
-<span class="fc" id="L47">        Instant start = Instant.now();</span>
-<span class="fc" id="L48">        List&lt;String&gt; leftLines = left.getLogicalRecords();</span>
-<span class="fc" id="L49">        List&lt;String&gt; rightLines = right.getLogicalRecords();</span>
-<span class="fc" id="L50">        List&lt;DiffHunk&gt; hunks = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L51">        int max = Math.max(leftLines.size(), rightLines.size());</span>
-<span class="fc bfc" id="L52" title="All 2 branches covered.">        for (int i = 0; i &lt; max; i++) {</span>
-<span class="fc bfc" id="L53" title="All 2 branches covered.">            String leftValue = i &lt; leftLines.size() ? leftLines.get(i) : null;</span>
-<span class="fc bfc" id="L54" title="All 2 branches covered.">            String rightValue = i &lt; rightLines.size() ? rightLines.get(i) : null;</span>
-<span class="fc bfc" id="L55" title="All 4 branches covered.">            if (leftValue != null &amp;&amp; rightValue != null) {</span>
-<span class="fc bfc" id="L56" title="All 2 branches covered.">                if (!leftValue.equals(rightValue)) {</span>
-<span class="fc" id="L57">                    hunks.add(DiffHunk.of(</span>
-<span class="fc" id="L58">                            &quot;txt-line-&quot; + (i + 1),</span>
-<span class="fc" id="L59">                            DiffType.MODIFY,</span>
-<span class="fc" id="L60">                            &quot;Line &quot; + (i + 1),</span>
-<span class="fc" id="L61">                            List.of(</span>
-<span class="fc" id="L62">                                    new DiffFragment(DiffSide.LEFT, i, i, leftValue),</span>
-<span class="fc" id="L63">                                    new DiffFragment(DiffSide.RIGHT, i, i, rightValue)</span>
-                            )));
-                }
-<span class="pc bpc" id="L66" title="1 of 4 branches missed.">            } else if (leftValue == null &amp;&amp; rightValue != null) {</span>
-<span class="fc" id="L67">                hunks.add(DiffHunk.of(</span>
-<span class="fc" id="L68">                        &quot;txt-line-&quot; + (i + 1),</span>
-<span class="fc" id="L69">                        DiffType.INSERT,</span>
-<span class="fc" id="L70">                        &quot;Insert at line &quot; + (i + 1),</span>
-<span class="fc" id="L71">                        List.of(new DiffFragment(DiffSide.RIGHT, i, i, rightValue))));</span>
-<span class="pc bpc" id="L72" title="1 of 2 branches missed.">            } else if (leftValue != null) {</span>
-<span class="fc" id="L73">                hunks.add(DiffHunk.of(</span>
-<span class="fc" id="L74">                        &quot;txt-line-&quot; + (i + 1),</span>
-<span class="fc" id="L75">                        DiffType.DELETE,</span>
-<span class="fc" id="L76">                        &quot;Delete line &quot; + (i + 1),</span>
-<span class="fc" id="L77">                        List.of(new DiffFragment(DiffSide.LEFT, i, i, leftValue))));</span>
+<span class="fc" id="L49">        Instant start = Instant.now();</span>
+<span class="fc" id="L50">        List&lt;String&gt; leftLines = left.getLogicalRecords();</span>
+<span class="fc" id="L51">        List&lt;String&gt; rightLines = right.getLogicalRecords();</span>
+<span class="fc" id="L52">        List&lt;DiffHunk&gt; hunks = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        for (DeltaInfo delta : calculateDeltas(leftLines, rightLines)) {</span>
+<span class="fc" id="L54">            List&lt;DiffFragment&gt; fragments = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">            if (!delta.sourceLines().isEmpty()) {</span>
+<span class="fc" id="L56">                fragments.add(new DiffFragment(</span>
+<span class="fc" id="L57">                        DiffSide.LEFT,</span>
+<span class="fc" id="L58">                        delta.sourcePos(),</span>
+<span class="fc" id="L59">                        delta.sourcePos() + delta.sourceLines().size() - 1,</span>
+<span class="fc" id="L60">                        renderLines(delta.sourceLines())));</span>
             }
+<span class="fc bfc" id="L62" title="All 2 branches covered.">            if (!delta.targetLines().isEmpty()) {</span>
+<span class="fc" id="L63">                fragments.add(new DiffFragment(</span>
+<span class="fc" id="L64">                        DiffSide.RIGHT,</span>
+<span class="fc" id="L65">                        delta.targetPos(),</span>
+<span class="fc" id="L66">                        delta.targetPos() + delta.targetLines().size() - 1,</span>
+<span class="fc" id="L67">                        renderLines(delta.targetLines())));</span>
+            }
+<span class="fc" id="L69">            hunks.add(DiffHunk.of(</span>
+<span class="fc" id="L70">                    delta.id(),</span>
+<span class="fc" id="L71">                    delta.type(),</span>
+<span class="fc" id="L72">                    buildSummary(delta),</span>
+<span class="fc" id="L73">                    fragments));</span>
         }
-<span class="fc" id="L80">        return new DiffResult(FormatType.TXT, hunks, Duration.between(start, Instant.now()));</span>
+<span class="fc" id="L75">        return new DiffResult(FormatType.TXT, hunks, Duration.between(start, Instant.now()));</span>
     }
 
     @Override
@@ -85,62 +80,220 @@ import java.util.stream.Stream;
                              NormalizedContent right,
                              List&lt;MergeDecision&gt; decisions,
                              Path outputPath) throws IOException {
-<span class="fc" id="L88">        Instant start = Instant.now();</span>
-<span class="fc" id="L89">        List&lt;String&gt; merged = new ArrayList&lt;&gt;(left.getLogicalRecords());</span>
-<span class="fc bfc" id="L90" title="All 2 branches covered.">        for (MergeDecision decision : decisions) {</span>
-<span class="fc" id="L91">            int index = extractIndex(decision.getHunkId());</span>
-<span class="fc bfc" id="L92" title="All 2 branches covered.">            if (index &lt; 0) {</span>
-<span class="fc" id="L93">                continue;</span>
+<span class="fc" id="L83">        Instant start = Instant.now();</span>
+<span class="fc" id="L84">        List&lt;String&gt; merged = new ArrayList&lt;&gt;(left.getLogicalRecords());</span>
+<span class="fc" id="L85">        Map&lt;String, MergeDecision&gt; decisionIndex = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">        for (MergeDecision decision : decisions) {</span>
+<span class="fc" id="L87">            decisionIndex.put(decision.getHunkId(), decision);</span>
+        }
+<span class="fc" id="L89">        List&lt;DeltaInfo&gt; deltas = calculateDeltas(left.getLogicalRecords(), right.getLogicalRecords());</span>
+<span class="fc" id="L90">        int offset = 0;</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        for (DeltaInfo delta : deltas) {</span>
+<span class="fc" id="L92">            MergeDecision decision = decisionIndex.get(delta.id());</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">            if (decision == null) {</span>
+<span class="fc" id="L94">                continue;</span>
             }
-<span class="pc bpc" id="L95" title="2 of 4 branches missed.">            switch (decision.getChoice()) {</span>
-<span class="nc" id="L96">                case TAKE_LEFT -&gt; applyLeft(merged, left.getLogicalRecords(), index);</span>
-<span class="fc" id="L97">                case TAKE_RIGHT -&gt; applyRight(merged, right.getLogicalRecords(), index);</span>
-<span class="fc" id="L98">                case MANUAL -&gt; applyManual(merged, decision.getManualContent(), index);</span>
+<span class="fc" id="L96">            int index = delta.sourcePos() + offset;</span>
+<span class="pc bpc" id="L97" title="2 of 4 branches missed.">            switch (decision.getChoice()) {</span>
+                case TAKE_LEFT -&gt; {
+                    // Default view already reflects left side; no action needed.
+                }
+<span class="fc" id="L101">                case TAKE_RIGHT -&gt; offset += applyRight(merged, delta, index);</span>
+<span class="fc" id="L102">                case MANUAL -&gt; offset += applyManual(merged, delta, index, decision.getManualContent());</span>
             }
         }
-<span class="pc bpc" id="L101" title="1 of 2 branches missed.">        if (outputPath != null) {</span>
-<span class="fc" id="L102">            Files.write(outputPath, merged, left.getEncoding());</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">        if (outputPath != null) {</span>
+<span class="fc" id="L106">            Files.write(outputPath, merged, left.getEncoding());</span>
         }
-<span class="fc" id="L104">        return new MergeResult(FormatType.TXT, outputPath, Duration.between(start, Instant.now()));</span>
+<span class="fc" id="L108">        return new MergeResult(FormatType.TXT, outputPath, Duration.between(start, Instant.now()));</span>
     }
 
-    private void applyLeft(List&lt;String&gt; target, List&lt;String&gt; left, int index) {
-<span class="nc bnc" id="L108" title="All 4 branches missed.">        if (index &lt; target.size() &amp;&amp; index &lt; left.size()) {</span>
-<span class="nc" id="L109">            target.set(index, left.get(index));</span>
+    private int applyRight(List&lt;String&gt; target, DeltaInfo delta, int index) {
+<span class="fc" id="L112">        int before = target.size();</span>
+<span class="fc" id="L113">        int insertionIndex = clampIndex(index, target.size());</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        if (delta.type() == DiffType.INSERT) {</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">            if (!delta.targetLines().isEmpty()) {</span>
+<span class="fc" id="L116">                target.addAll(insertionIndex, delta.targetLines());</span>
+            }
+<span class="fc" id="L118">            return target.size() - before;</span>
         }
-<span class="nc" id="L111">    }</span>
+<span class="fc" id="L120">        replaceRange(target, insertionIndex, delta.sourceLines().size(), delta.targetLines());</span>
+<span class="fc" id="L121">        return target.size() - before;</span>
+    }
 
-    private void applyRight(List&lt;String&gt; target, List&lt;String&gt; right, int index) {
-<span class="pc bpc" id="L114" title="1 of 2 branches missed.">        if (index &lt; right.size()) {</span>
-<span class="fc bfc" id="L115" title="All 2 branches covered.">            if (index &lt; target.size()) {</span>
-<span class="fc" id="L116">                target.set(index, right.get(index));</span>
-<span class="fc" id="L117">            } else {</span>
-<span class="fc" id="L118">                target.add(right.get(index));</span>
+    private int applyManual(List&lt;String&gt; target, DeltaInfo delta, int index, String manualContent) {
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (manualContent == null) {</span>
+<span class="nc" id="L126">            return 0;</span>
+        }
+<span class="fc" id="L128">        List&lt;String&gt; manualLines = splitManualContent(manualContent);</span>
+<span class="fc" id="L129">        int before = target.size();</span>
+<span class="fc" id="L130">        int insertionIndex = clampIndex(index, target.size());</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">        if (delta.type() != DiffType.INSERT) {</span>
+<span class="nc" id="L132">            replaceRange(target, insertionIndex, delta.sourceLines().size(), manualLines);</span>
+<span class="nc" id="L133">        } else {</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">            if (!manualLines.isEmpty()) {</span>
+<span class="fc" id="L135">                target.addAll(insertionIndex, manualLines);</span>
             }
         }
-<span class="fc" id="L121">    }</span>
+<span class="fc" id="L138">        return target.size() - before;</span>
+    }
 
-    private void applyManual(List&lt;String&gt; target, String manualContent, int index) {
-<span class="pc bpc" id="L124" title="1 of 2 branches missed.">        if (manualContent == null) {</span>
-<span class="nc" id="L125">            return;</span>
+    private List&lt;String&gt; splitManualContent(String manualContent) {
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">        if (manualContent.isEmpty()) {</span>
+<span class="nc" id="L143">            return List.of(&quot;&quot;);</span>
         }
-<span class="pc bpc" id="L127" title="1 of 2 branches missed.">        if (index &lt; target.size()) {</span>
-<span class="nc" id="L128">            target.set(index, manualContent);</span>
-<span class="nc" id="L129">        } else {</span>
-<span class="fc" id="L130">            target.add(manualContent);</span>
-        }
-<span class="fc" id="L132">    }</span>
+<span class="fc" id="L145">        return List.of(manualContent.split(&quot;\\R&quot;, -1));</span>
+    }
 
-    private int extractIndex(String hunkId) {
-<span class="pc bpc" id="L135" title="1 of 2 branches missed.">        if (hunkId == null) {</span>
-<span class="nc" id="L136">            return -1;</span>
+    private void replaceRange(List&lt;String&gt; target, int index, int length, List&lt;String&gt; replacement) {
+<span class="fc" id="L149">        int start = clampIndex(index, target.size());</span>
+<span class="fc" id="L150">        int actualLength = Math.min(length, Math.max(0, target.size() - start));</span>
+<span class="pc bpc" id="L151" title="1 of 4 branches missed.">        for (int i = 0; i &lt; actualLength &amp;&amp; start &lt; target.size(); i++) {</span>
+<span class="fc" id="L152">            target.remove(start);</span>
         }
-        try {
-<span class="fc" id="L139">            return Integer.parseInt(hunkId.replace(&quot;txt-line-&quot;, &quot;&quot;)) - 1;</span>
-<span class="fc" id="L140">        } catch (NumberFormatException ex) {</span>
-<span class="fc" id="L141">            log.debug(&quot;Failed to parse text hunk line from id '{}': {}&quot;, hunkId, ex.getMessage());</span>
-<span class="fc" id="L142">            return -1;</span>
+<span class="pc bpc" id="L154" title="2 of 4 branches missed.">        if (replacement != null &amp;&amp; !replacement.isEmpty()) {</span>
+<span class="fc" id="L155">            target.addAll(start, replacement);</span>
         }
+<span class="fc" id="L157">    }</span>
+
+    private int clampIndex(int index, int size) {
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">        if (index &lt; 0) {</span>
+<span class="nc" id="L161">            return 0;</span>
+        }
+<span class="fc" id="L163">        return Math.min(index, size);</span>
+    }
+
+    private List&lt;DeltaInfo&gt; calculateDeltas(List&lt;String&gt; leftLines, List&lt;String&gt; rightLines) {
+<span class="fc" id="L167">        Patch&lt;String&gt; patch = DiffUtils.diff(leftLines, rightLines);</span>
+<span class="fc" id="L168">        List&lt;DeltaInfo&gt; deltas = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">        for (AbstractDelta&lt;String&gt; delta : patch.getDeltas()) {</span>
+<span class="fc" id="L170">            DiffType type = mapType(delta.getType());</span>
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">            if (type == null) {</span>
+<span class="nc" id="L172">                continue;</span>
+            }
+<span class="pc bpc" id="L174" title="1 of 3 branches missed.">            switch (type) {</span>
+<span class="fc" id="L175">                case INSERT, DELETE -&gt; deltas.addAll(expandUniformDelta(delta, type));</span>
+<span class="fc" id="L176">                case MODIFY -&gt; deltas.addAll(expandModifyDelta(delta));</span>
+                case EQUAL -&gt; {
+                    // no-op; DiffUtils never emits EQUAL deltas
+                }
+            }
+        }
+<span class="fc" id="L182">        return deltas;</span>
+    }
+
+    private List&lt;DeltaInfo&gt; expandUniformDelta(AbstractDelta&lt;String&gt; delta, DiffType type) {
+<span class="fc" id="L186">        List&lt;DeltaInfo&gt; expanded = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">        List&lt;String&gt; lines = type == DiffType.INSERT</span>
+<span class="fc" id="L188">                ? List.copyOf(delta.getTarget().getLines())</span>
+<span class="fc" id="L189">                : List.copyOf(delta.getSource().getLines());</span>
+<span class="fc" id="L190">        int sourceStart = delta.getSource().getPosition();</span>
+<span class="fc" id="L191">        int targetStart = delta.getTarget().getPosition();</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">        for (int i = 0; i &lt; lines.size(); i++) {</span>
+<span class="fc" id="L193">            int sourcePos = sourceStart + i;</span>
+<span class="fc" id="L194">            int targetPos = targetStart + i;</span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">            List&lt;String&gt; sourceLines = type == DiffType.INSERT ? List.of() : List.of(lines.get(i));</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">            List&lt;String&gt; targetLines = type == DiffType.INSERT ? List.of(lines.get(i)) : List.of();</span>
+<span class="fc" id="L197">            expanded.add(new DeltaInfo(</span>
+<span class="fc" id="L198">                    buildHunkId(sourcePos),</span>
+<span class="fc" id="L199">                    type,</span>
+<span class="fc" id="L200">                    sourcePos,</span>
+<span class="fc" id="L201">                    sourceLines,</span>
+<span class="fc" id="L202">                    targetPos,</span>
+<span class="fc" id="L203">                    targetLines));</span>
+        }
+<span class="fc" id="L205">        return expanded;</span>
+    }
+
+    private List&lt;DeltaInfo&gt; expandModifyDelta(AbstractDelta&lt;String&gt; delta) {
+<span class="fc" id="L209">        List&lt;DeltaInfo&gt; expanded = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L210">        List&lt;String&gt; sourceLines = List.copyOf(delta.getSource().getLines());</span>
+<span class="fc" id="L211">        List&lt;String&gt; targetLines = List.copyOf(delta.getTarget().getLines());</span>
+<span class="fc" id="L212">        int sourceStart = delta.getSource().getPosition();</span>
+<span class="fc" id="L213">        int targetStart = delta.getTarget().getPosition();</span>
+<span class="fc" id="L214">        int span = Math.max(sourceLines.size(), targetLines.size());</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">        for (int i = 0; i &lt; span; i++) {</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">            String leftLine = i &lt; sourceLines.size() ? sourceLines.get(i) : null;</span>
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">            String rightLine = i &lt; targetLines.size() ? targetLines.get(i) : null;</span>
+<span class="pc bpc" id="L218" title="1 of 4 branches missed.">            if (leftLine != null &amp;&amp; rightLine != null) {</span>
+<span class="fc" id="L219">                expanded.add(new DeltaInfo(</span>
+<span class="fc" id="L220">                        buildHunkId(sourceStart + i),</span>
+<span class="fc" id="L221">                        DiffType.MODIFY,</span>
+<span class="fc" id="L222">                        sourceStart + i,</span>
+<span class="fc" id="L223">                        List.of(leftLine),</span>
+<span class="fc" id="L224">                        targetStart + i,</span>
+<span class="fc" id="L225">                        List.of(rightLine)));</span>
+<span class="pc bpc" id="L226" title="2 of 4 branches missed.">            } else if (leftLine == null &amp;&amp; rightLine != null) {</span>
+<span class="fc" id="L227">                expanded.add(new DeltaInfo(</span>
+<span class="fc" id="L228">                        buildHunkId(sourceStart + i),</span>
+<span class="fc" id="L229">                        DiffType.INSERT,</span>
+<span class="fc" id="L230">                        sourceStart + i,</span>
+<span class="fc" id="L231">                        List.of(),</span>
+<span class="fc" id="L232">                        targetStart + i,</span>
+<span class="fc" id="L233">                        List.of(rightLine)));</span>
+<span class="pc bnc" id="L234" title="All 2 branches missed.">            } else if (leftLine != null) {</span>
+<span class="nc" id="L235">                expanded.add(new DeltaInfo(</span>
+<span class="nc" id="L236">                        buildHunkId(sourceStart + i),</span>
+<span class="nc" id="L237">                        DiffType.DELETE,</span>
+<span class="nc" id="L238">                        sourceStart + i,</span>
+<span class="nc" id="L239">                        List.of(leftLine),</span>
+<span class="nc" id="L240">                        targetStart + Math.min(i, targetLines.size()),</span>
+<span class="nc" id="L241">                        List.of()));</span>
+            }
+        }
+<span class="fc" id="L244">        return expanded;</span>
+    }
+
+    private String buildHunkId(int sourcePos) {
+<span class="fc" id="L248">        return &quot;txt-line-&quot; + (sourcePos + 1);</span>
+    }
+
+    private DiffType mapType(DeltaType type) {
+<span class="pc bpc" id="L252" title="1 of 4 branches missed.">        return switch (type) {</span>
+<span class="fc" id="L253">            case DELETE -&gt; DiffType.DELETE;</span>
+<span class="fc" id="L254">            case INSERT -&gt; DiffType.INSERT;</span>
+<span class="fc" id="L255">            case CHANGE -&gt; DiffType.MODIFY;</span>
+<span class="nc" id="L256">            default -&gt; null;</span>
+        };
+    }
+
+    private String buildSummary(DeltaInfo delta) {
+<span class="pc bpc" id="L261" title="1 of 4 branches missed.">        return switch (delta.type()) {</span>
+<span class="fc" id="L262">            case INSERT -&gt; &quot;Insert at line &quot; + (delta.sourcePos() + 1);</span>
+<span class="fc" id="L263">            case DELETE -&gt; &quot;Delete &quot; + describeRange(delta.sourcePos(), delta.sourceLines().size());</span>
+<span class="fc" id="L264">            case MODIFY -&gt; &quot;Modify &quot; + describeRange(delta.sourcePos(), delta.sourceLines().size());</span>
+<span class="nc" id="L265">            case EQUAL -&gt; &quot;No change at line &quot; + (delta.sourcePos() + 1);</span>
+        };
+    }
+
+    private String describeRange(int start, int length) {
+<span class="fc" id="L270">        int from = start + 1;</span>
+<span class="fc" id="L271">        int to = start + Math.max(length, 1);</span>
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">        if (from == to) {</span>
+<span class="fc" id="L273">            return &quot;line &quot; + from;</span>
+        }
+<span class="nc" id="L275">        return &quot;lines &quot; + from + &quot;-&quot; + to;</span>
+    }
+
+    private String renderLines(List&lt;String&gt; lines) {
+<span class="pc bpc" id="L279" title="1 of 2 branches missed.">        if (lines.isEmpty()) {</span>
+<span class="nc" id="L280">            return &quot;&quot;;</span>
+        }
+<span class="fc" id="L282">        return String.join(System.lineSeparator(), lines);</span>
+    }
+
+    private record DeltaInfo(String id,
+                             DiffType type,
+                             int sourcePos,
+                             List&lt;String&gt; sourceLines,
+                             int targetPos,
+                             List&lt;String&gt; targetLines) {
+<span class="fc" id="L291">        DeltaInfo {</span>
+<span class="fc" id="L292">            Objects.requireNonNull(id, &quot;id&quot;);</span>
+<span class="fc" id="L293">            Objects.requireNonNull(type, &quot;type&quot;);</span>
+<span class="fc" id="L294">            Objects.requireNonNull(sourceLines, &quot;sourceLines&quot;);</span>
+<span class="fc" id="L295">            Objects.requireNonNull(targetLines, &quot;targetLines&quot;);</span>
+<span class="fc" id="L296">        }</span>
     }
 }
 

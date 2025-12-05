@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.universaldiff.format.txt.TxtFormatAdapterTest
 -------------------------------------------------------------------------------
-Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.020 s -- in com.universaldiff.format.txt.TxtFormatAdapterTest
+Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.019 s -- in com.universaldiff.format.txt.TxtFormatAdapterTest

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.universaldiff.core.detect.DefaultFileTypeDetectorMoreTest" time="0.112" tests="11" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.universaldiff.core.detect.DefaultFileTypeDetectorMoreTest" time="0.104" tests="11" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="17"/>
     <property name="sun.cpu.isalist" value="amd64"/>
@@ -15,7 +15,7 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="CN"/>
     <property name="sun.boot.library.path" value="C:\Program Files\Eclipse Adoptium\jdk-17.0.16.8-hotspot\bin"/>
-    <property name="sun.java.command" value="C:\Users\18145\AppData\Local\Temp\surefire12359864176576943423\surefirebooter-20251129234350337_3.jar C:\Users\18145\AppData\Local\Temp\surefire12359864176576943423 2025-11-29T23-43-50_195-jvmRun1 surefire-20251129234350337_1tmp surefire_0-20251129234350337_2tmp"/>
+    <property name="sun.java.command" value="C:\Users\18145\AppData\Local\Temp\surefire10651803865503450550\surefirebooter-20251205104552226_3.jar C:\Users\18145\AppData\Local\Temp\surefire10651803865503450550 2025-12-05T10-45-52_082-jvmRun1 surefire-20251205104552226_1tmp surefire_0-20251205104552226_2tmp"/>
     <property name="jdk.debug" value="release"/>
     <property name="surefire.test.class.path" value="E:\18145\Projects\UniversalDiff\target\test-classes;E:\18145\Projects\UniversalDiff\target\classes;C:\Users\18145\.m2\repository\org\openjfx\javafx-controls\21.0.2\javafx-controls-21.0.2-win.jar;C:\Users\18145\.m2\repository\org\openjfx\javafx-graphics\21.0.2\javafx-graphics-21.0.2.jar;C:\Users\18145\.m2\repository\org\openjfx\javafx-graphics\21.0.2\javafx-graphics-21.0.2-win.jar;C:\Users\18145\.m2\repository\org\openjfx\javafx-base\21.0.2\javafx-base-21.0.2.jar;C:\Users\18145\.m2\repository\org\openjfx\javafx-base\21.0.2\javafx-base-21.0.2-win.jar;C:\Users\18145\.m2\repository\org\openjfx\javafx-fxml\21.0.2\javafx-fxml-21.0.2-win.jar;C:\Users\18145\.m2\repository\org\openjfx\javafx-controls\21.0.2\javafx-controls-21.0.2.jar;C:\Users\18145\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.17.1\jackson-databind-2.17.1.jar;C:\Users\18145\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.17.1\jackson-annotations-2.17.1.jar;C:\Users\18145\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.17.1\jackson-core-2.17.1.jar;C:\Users\18145\.m2\repository\com\fasterxml\jackson\dataformat\jackson-dataformat-csv\2.17.1\jackson-dataformat-csv-2.17.1.jar;C:\Users\18145\.m2\repository\org\apache\commons\commons-text\1.11.0\commons-text-1.11.0.jar;C:\Users\18145\.m2\repository\org\apache\commons\commons-lang3\3.13.0\commons-lang3-3.13.0.jar;C:\Users\18145\.m2\repository\org\apache\commons\commons-csv\1.11.0\commons-csv-1.11.0.jar;C:\Users\18145\.m2\repository\commons-io\commons-io\2.16.1\commons-io-2.16.1.jar;C:\Users\18145\.m2\repository\commons-codec\commons-codec\1.16.1\commons-codec-1.16.1.jar;C:\Users\18145\.m2\repository\org\fxmisc\richtext\richtextfx\0.11.0\richtextfx-0.11.0.jar;C:\Users\18145\.m2\repository\org\reactfx\reactfx\2.0-M5\reactfx-2.0-M5.jar;C:\Users\18145\.m2\repository\org\fxmisc\undo\undofx\2.1.1\undofx-2.1.1.jar;C:\Users\18145\.m2\repository\org\fxmisc\flowless\flowless\0.7.0\flowless-0.7.0.jar;C:\Users\18145\.m2\repository\org\fxmisc\wellbehaved\wellbehavedfx\0.3.3\wellbehavedfx-0.3.3.jar;C:\Users\18145\.m2\repository\io\github\java-diff-utils\java-diff-utils\4.12\java-diff-utils-4.12.jar;C:\Users\18145\.m2\repository\org\slf4j\slf4j-api\2.0.13\slf4j-api-2.0.13.jar;C:\Users\18145\.m2\repository\org\slf4j\slf4j-simple\2.0.13\slf4j-simple-2.0.13.jar;C:\Users\18145\.m2\repository\org\assertj\assertj-core\3.25.3\assertj-core-3.25.3.jar;C:\Users\18145\.m2\repository\net\bytebuddy\byte-buddy\1.14.11\byte-buddy-1.14.11.jar;C:\Users\18145\.m2\repository\org\junit\jupiter\junit-jupiter\5.10.2\junit-jupiter-5.10.2.jar;C:\Users\18145\.m2\repository\org\junit\jupiter\junit-jupiter-api\5.10.2\junit-jupiter-api-5.10.2.jar;C:\Users\18145\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\18145\.m2\repository\org\junit\platform\junit-platform-commons\1.10.2\junit-platform-commons-1.10.2.jar;C:\Users\18145\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\18145\.m2\repository\org\junit\jupiter\junit-jupiter-params\5.10.2\junit-jupiter-params-5.10.2.jar;C:\Users\18145\.m2\repository\org\junit\jupiter\junit-jupiter-engine\5.10.2\junit-jupiter-engine-5.10.2.jar;C:\Users\18145\.m2\repository\org\junit\platform\junit-platform-engine\1.10.2\junit-platform-engine-1.10.2.jar;"/>
     <property name="sun.cpu.endian" value="little"/>
@@ -30,7 +30,7 @@
     <property name="line.separator" value="&#10;"/>
     <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
     <property name="java.specification.name" value="Java Platform API Specification"/>
-    <property name="surefire.real.class.path" value="C:\Users\18145\AppData\Local\Temp\surefire12359864176576943423\surefirebooter-20251129234350337_3.jar"/>
+    <property name="surefire.real.class.path" value="C:\Users\18145\AppData\Local\Temp\surefire10651803865503450550\surefirebooter-20251205104552226_3.jar"/>
     <property name="user.script" value=""/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="java.runtime.version" value="17.0.16+8"/>
@@ -50,7 +50,7 @@
     <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
     <property name="sun.os.patch.level" value=""/>
     <property name="native.encoding" value="GBK"/>
-    <property name="java.library.path" value="C:\Program Files\Eclipse Adoptium\jdk-17.0.16.8-hotspot\bin;C:\WINDOWS\Sun\Java\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\Users\18145\AppData\Local\Temp\.tmpSj8Hur;C:\Program Files\Eclipse Adoptium\jdk-17.0.16.8-hotspot\bin;C:\Program Files (x86)\VMware\VMware Workstation\bin\;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Program Files\NVIDIA Corporation\NVIDIA app\NvDLISR;C:\Program Files\NVIDIA Corporation\Nsight Compute 2023.2.0\;C:\Program Files\usbipd-win\;E:\18145\mingw64\bin;C:\Program Files\AskLink;C:\Program Files\Git\cmd;E:\18145\ALL\dependency\apache-maven-3.9.11-bin\apache-maven-3.9.11\bin;C:\Program Files\dotnet\;C:\Program Files\Eclipse Adoptium\jdk-17.0.16.8-hotspot\bin;C:\Program Files (x86)\VMware\VMware Workstation\bin\;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Program Files\NVIDIA Corporation\NVIDIA app\NvDLISR;C:\Program Files\NVIDIA Corporation\Nsight Compute 2023.2.0\;C:\Program Files\usbipd-win\;E:\18145\mingw64\bin;C:\Program Files\AskLink;C:\Program Files\Git\cmd;E:\18145\ALL\dependency\apache-maven-3.9.11-bin\apache-maven-3.9.11\bin;C:\Program Files\dotnet\;C:\msys64\mingw64\bin;c:\Users\18145\.vscode\extensions\openai.chatgpt-0.4.46-win32-x64\bin\windows-x86_64;."/>
+    <property name="java.library.path" value="C:\Program Files\Eclipse Adoptium\jdk-17.0.16.8-hotspot\bin;C:\WINDOWS\Sun\Java\bin;C:\WINDOWS\system32;C:\WINDOWS;E:\18145\develop\flutter\bin\cache\dart-sdk\bin\;c:\Users\18145\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand;c:\Users\18145\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\copilotCli;C:\Program Files\Eclipse Adoptium\jdk-17.0.16.8-hotspot\bin;C:\Program Files (x86)\VMware\VMware Workstation\bin\;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Program Files\NVIDIA Corporation\NVIDIA app\NvDLISR;C:\Program Files\NVIDIA Corporation\Nsight Compute 2023.2.0\;C:\Program Files\usbipd-win\;E:\18145\mingw64\bin;C:\Program Files\AskLink;C:\Program Files\Git\cmd;E:\18145\ALL\dependency\apache-maven-3.9.11-bin\apache-maven-3.9.11\bin;C:\Program Files\dotnet\;C:\Program Files\Docker\Docker\resources\bin;C:\Program Files\Eclipse Adoptium\jdk-17.0.16.8-hotspot\bin;C:\Program Files (x86)\VMware\VMware Workstation\bin\;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Program Files\NVIDIA Corporation\NVIDIA app\NvDLISR;C:\Program Files\NVIDIA Corporation\Nsight Compute 2023.2.0\;C:\Program Files\usbipd-win\;E:\18145\mingw64\bin;C:\Program Files\AskLink;C:\Program Files\Git\cmd;E:\18145\ALL\dependency\apache-maven-3.9.11-bin\apache-maven-3.9.11\bin;C:\Program Files\dotnet\;C:\Program Files\Docker\Docker\resources\bin;C:\msys64\mingw64\bin;c:\Users\18145\.vscode\extensions\vscjava.vscode-java-debug-0.58.3\bundled\scripts\noConfigScripts;."/>
     <property name="java.vm.info" value="mixed mode, sharing"/>
     <property name="java.vendor" value="Eclipse Adoptium"/>
     <property name="java.vm.version" value="17.0.16+8"/>
@@ -58,24 +58,24 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="java.class.version" value="61.0"/>
   </properties>
-  <testcase name="scalarJsonContentFallsBackToText" classname="com.universaldiff.core.detect.DefaultFileTypeDetectorMoreTest" time="0.077">
+  <testcase name="scalarJsonContentFallsBackToText" classname="com.universaldiff.core.detect.DefaultFileTypeDetectorMoreTest" time="0.069">
     <system-err><![CDATA[[Fatal Error] :1:1: 前言中不允许有内容。
 ]]></system-err>
   </testcase>
-  <testcase name="detectsBinaryWhenLeadingBytesAreNonPrintable" classname="com.universaldiff.core.detect.DefaultFileTypeDetectorMoreTest" time="0.009">
+  <testcase name="detectsBinaryWhenLeadingBytesAreNonPrintable" classname="com.universaldiff.core.detect.DefaultFileTypeDetectorMoreTest" time="0.008">
     <system-err><![CDATA[[Fatal Error] :1:1: 前言中不允许有内容。
 ]]></system-err>
   </testcase>
   <testcase name="directoryOrNonRegularFilesReportUnknown" classname="com.universaldiff.core.detect.DefaultFileTypeDetectorMoreTest" time="0.002"/>
-  <testcase name="bomDetectorDefaultsToUtf8" classname="com.universaldiff.core.detect.DefaultFileTypeDetectorMoreTest" time="0.003"/>
-  <testcase name="extensionTakesPrecedenceOverContent" classname="com.universaldiff.core.detect.DefaultFileTypeDetectorMoreTest" time="0.001"/>
-  <testcase name="fileWithoutExtensionStillDetectsByContent" classname="com.universaldiff.core.detect.DefaultFileTypeDetectorMoreTest" time="0.002"/>
+  <testcase name="bomDetectorDefaultsToUtf8" classname="com.universaldiff.core.detect.DefaultFileTypeDetectorMoreTest" time="0.004"/>
+  <testcase name="extensionTakesPrecedenceOverContent" classname="com.universaldiff.core.detect.DefaultFileTypeDetectorMoreTest" time="0.002"/>
+  <testcase name="fileWithoutExtensionStillDetectsByContent" classname="com.universaldiff.core.detect.DefaultFileTypeDetectorMoreTest" time="0.003"/>
   <testcase name="highBitBytesTriggerBinaryDetection" classname="com.universaldiff.core.detect.DefaultFileTypeDetectorMoreTest" time="0.002"/>
   <testcase name="nullPathReturnsUnknown" classname="com.universaldiff.core.detect.DefaultFileTypeDetectorMoreTest" time="0.001"/>
-  <testcase name="csvHeuristicNeedsEnoughDelimiters" classname="com.universaldiff.core.detect.DefaultFileTypeDetectorMoreTest" time="0.003">
+  <testcase name="csvHeuristicNeedsEnoughDelimiters" classname="com.universaldiff.core.detect.DefaultFileTypeDetectorMoreTest" time="0.002">
     <system-err><![CDATA[[Fatal Error] :1:1: 前言中不允许有内容。
 ]]></system-err>
   </testcase>
-  <testcase name="bomDetectorRecognizesUtf16Be" classname="com.universaldiff.core.detect.DefaultFileTypeDetectorMoreTest" time="0.002"/>
-  <testcase name="csvHeuristicDoesNotTriggerForSingleLine" classname="com.universaldiff.core.detect.DefaultFileTypeDetectorMoreTest" time="0.003"/>
+  <testcase name="bomDetectorRecognizesUtf16Be" classname="com.universaldiff.core.detect.DefaultFileTypeDetectorMoreTest" time="0.003"/>
+  <testcase name="csvHeuristicDoesNotTriggerForSingleLine" classname="com.universaldiff.core.detect.DefaultFileTypeDetectorMoreTest" time="0.001"/>
 </testsuite>
