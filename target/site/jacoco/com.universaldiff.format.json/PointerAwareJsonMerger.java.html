@@ -51,11 +51,11 @@ final class PointerAwareJsonMerger implements JsonMerger {
 <span class="pc bpc" id="L51" title="2 of 4 branches missed.">            switch (decision.getChoice()) {</span>
                 case TAKE_LEFT -&gt; {
                     // already left, nothing to do
-                }
+<span class="nc" id="L54">                }</span>
                 case TAKE_RIGHT -&gt; {
 <span class="fc" id="L56">                    JsonNode rightValue = resolveNode(rightRoot, pointer);</span>
 <span class="fc" id="L57">                    setValue(merged, pointer, rightValue);</span>
-                }
+<span class="fc" id="L58">                }</span>
                 case MANUAL -&gt; {
 <span class="pc bpc" id="L60" title="1 of 2 branches missed.">                    if (decision.getManualContent() != null) {</span>
 <span class="fc" id="L61">                        JsonNode manual = mapper.readTree(decision.getManualContent());</span>
@@ -63,7 +63,7 @@ final class PointerAwareJsonMerger implements JsonMerger {
                     }
                 }
             }
-        }
+<span class="fc" id="L66">        }</span>
 <span class="fc" id="L67">        Path writtenPath = outputPath;</span>
 <span class="pc bpc" id="L68" title="1 of 2 branches missed.">        if (outputPath != null) {</span>
 <span class="fc" id="L69">            String serialized = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(merged);</span>

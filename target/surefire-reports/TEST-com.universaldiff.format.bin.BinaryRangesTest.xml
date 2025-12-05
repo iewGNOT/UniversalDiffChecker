@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.universaldiff.format.bin.BinaryRangesTest" time="0.014" tests="4" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="com.universaldiff.format.bin.BinaryRangesTest" time="0.015" tests="4" errors="0" skipped="0" failures="0">
   <properties>
     <property name="java.specification.version" value="17"/>
     <property name="sun.cpu.isalist" value="amd64"/>
@@ -15,7 +15,7 @@
     <property name="sun.java.launcher" value="SUN_STANDARD"/>
     <property name="user.country" value="CN"/>
     <property name="sun.boot.library.path" value="C:\Program Files\Eclipse Adoptium\jdk-17.0.16.8-hotspot\bin"/>
-    <property name="sun.java.command" value="C:\Users\18145\AppData\Local\Temp\surefire13247716830477366429\surefirebooter-20251205221432409_3.jar C:\Users\18145\AppData\Local\Temp\surefire13247716830477366429 2025-12-05T22-14-32_262-jvmRun1 surefire-20251205221432409_1tmp surefire_0-20251205221432409_2tmp"/>
+    <property name="sun.java.command" value="C:\Users\18145\AppData\Local\Temp\surefire2580026251916487623\surefirebooter-20251206015057152_3.jar C:\Users\18145\AppData\Local\Temp\surefire2580026251916487623 2025-12-06T01-50-56_893-jvmRun1 surefire-20251206015057152_1tmp surefire_0-20251206015057152_2tmp"/>
     <property name="jdk.debug" value="release"/>
     <property name="surefire.test.class.path" value="E:\18145\Projects\UniversalDiff\target\test-classes;E:\18145\Projects\UniversalDiff\target\classes;C:\Users\18145\.m2\repository\org\openjfx\javafx-controls\21.0.2\javafx-controls-21.0.2-win.jar;C:\Users\18145\.m2\repository\org\openjfx\javafx-graphics\21.0.2\javafx-graphics-21.0.2.jar;C:\Users\18145\.m2\repository\org\openjfx\javafx-graphics\21.0.2\javafx-graphics-21.0.2-win.jar;C:\Users\18145\.m2\repository\org\openjfx\javafx-base\21.0.2\javafx-base-21.0.2.jar;C:\Users\18145\.m2\repository\org\openjfx\javafx-base\21.0.2\javafx-base-21.0.2-win.jar;C:\Users\18145\.m2\repository\org\openjfx\javafx-fxml\21.0.2\javafx-fxml-21.0.2-win.jar;C:\Users\18145\.m2\repository\org\openjfx\javafx-controls\21.0.2\javafx-controls-21.0.2.jar;C:\Users\18145\.m2\repository\com\fasterxml\jackson\core\jackson-databind\2.17.1\jackson-databind-2.17.1.jar;C:\Users\18145\.m2\repository\com\fasterxml\jackson\core\jackson-annotations\2.17.1\jackson-annotations-2.17.1.jar;C:\Users\18145\.m2\repository\com\fasterxml\jackson\core\jackson-core\2.17.1\jackson-core-2.17.1.jar;C:\Users\18145\.m2\repository\com\fasterxml\jackson\dataformat\jackson-dataformat-csv\2.17.1\jackson-dataformat-csv-2.17.1.jar;C:\Users\18145\.m2\repository\org\apache\commons\commons-text\1.11.0\commons-text-1.11.0.jar;C:\Users\18145\.m2\repository\org\apache\commons\commons-lang3\3.13.0\commons-lang3-3.13.0.jar;C:\Users\18145\.m2\repository\org\apache\commons\commons-csv\1.11.0\commons-csv-1.11.0.jar;C:\Users\18145\.m2\repository\commons-io\commons-io\2.16.1\commons-io-2.16.1.jar;C:\Users\18145\.m2\repository\commons-codec\commons-codec\1.16.1\commons-codec-1.16.1.jar;C:\Users\18145\.m2\repository\org\fxmisc\richtext\richtextfx\0.11.0\richtextfx-0.11.0.jar;C:\Users\18145\.m2\repository\org\reactfx\reactfx\2.0-M5\reactfx-2.0-M5.jar;C:\Users\18145\.m2\repository\org\fxmisc\undo\undofx\2.1.1\undofx-2.1.1.jar;C:\Users\18145\.m2\repository\org\fxmisc\flowless\flowless\0.7.0\flowless-0.7.0.jar;C:\Users\18145\.m2\repository\org\fxmisc\wellbehaved\wellbehavedfx\0.3.3\wellbehavedfx-0.3.3.jar;C:\Users\18145\.m2\repository\io\github\java-diff-utils\java-diff-utils\4.12\java-diff-utils-4.12.jar;C:\Users\18145\.m2\repository\org\slf4j\slf4j-api\2.0.13\slf4j-api-2.0.13.jar;C:\Users\18145\.m2\repository\org\slf4j\slf4j-simple\2.0.13\slf4j-simple-2.0.13.jar;C:\Users\18145\.m2\repository\org\assertj\assertj-core\3.25.3\assertj-core-3.25.3.jar;C:\Users\18145\.m2\repository\net\bytebuddy\byte-buddy\1.14.11\byte-buddy-1.14.11.jar;C:\Users\18145\.m2\repository\org\junit\jupiter\junit-jupiter\5.10.2\junit-jupiter-5.10.2.jar;C:\Users\18145\.m2\repository\org\junit\jupiter\junit-jupiter-api\5.10.2\junit-jupiter-api-5.10.2.jar;C:\Users\18145\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\18145\.m2\repository\org\junit\platform\junit-platform-commons\1.10.2\junit-platform-commons-1.10.2.jar;C:\Users\18145\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\18145\.m2\repository\org\junit\jupiter\junit-jupiter-params\5.10.2\junit-jupiter-params-5.10.2.jar;C:\Users\18145\.m2\repository\org\junit\jupiter\junit-jupiter-engine\5.10.2\junit-jupiter-engine-5.10.2.jar;C:\Users\18145\.m2\repository\org\junit\platform\junit-platform-engine\1.10.2\junit-platform-engine-1.10.2.jar;"/>
     <property name="sun.cpu.endian" value="little"/>
@@ -30,7 +30,7 @@
     <property name="line.separator" value="&#10;"/>
     <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
     <property name="java.specification.name" value="Java Platform API Specification"/>
-    <property name="surefire.real.class.path" value="C:\Users\18145\AppData\Local\Temp\surefire13247716830477366429\surefirebooter-20251205221432409_3.jar"/>
+    <property name="surefire.real.class.path" value="C:\Users\18145\AppData\Local\Temp\surefire2580026251916487623\surefirebooter-20251206015057152_3.jar"/>
     <property name="user.script" value=""/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
     <property name="java.runtime.version" value="17.0.16+8"/>
@@ -59,7 +59,7 @@
     <property name="java.class.version" value="61.0"/>
   </properties>
   <testcase name="diff_detectsMultipleNonOverlappingRanges" classname="com.universaldiff.format.bin.BinaryRangesTest" time="0.004"/>
-  <testcase name="normalize_hexInputProducesExpectedBytes" classname="com.universaldiff.format.bin.BinaryRangesTest" time="0.002"/>
+  <testcase name="normalize_hexInputProducesExpectedBytes" classname="com.universaldiff.format.bin.BinaryRangesTest" time="0.003"/>
   <testcase name="merge_manualInvalidHexThrows" classname="com.universaldiff.format.bin.BinaryRangesTest" time="0.003"/>
-  <testcase name="merge_takeRightAppliesAllRanges" classname="com.universaldiff.format.bin.BinaryRangesTest" time="0.003"/>
+  <testcase name="merge_takeRightAppliesAllRanges" classname="com.universaldiff.format.bin.BinaryRangesTest" time="0.004"/>
 </testsuite>

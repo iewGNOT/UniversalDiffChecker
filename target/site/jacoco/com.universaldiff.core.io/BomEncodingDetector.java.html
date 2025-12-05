@@ -35,9 +35,9 @@ import java.nio.file.Path;
 <span class="pc bpc" id="L35" title="2 of 8 branches missed.">            if (bom.length == 3 &amp;&amp; bom[0] == (byte) 0xEF &amp;&amp; bom[1] == (byte) 0xBB &amp;&amp; bom[2] == (byte) 0xBF) {</span>
 <span class="fc" id="L36">                return StandardCharsets.UTF_8;</span>
             }
-<span class="fc" id="L38">        } catch (IOException ex) {</span>
+<span class="pc bpc" id="L38" title="3 of 6 branches missed.">        } catch (IOException ex) {</span>
 <span class="fc" id="L39">            log.debug(&quot;Unable to read BOM for {}: {}&quot;, path, ex.getMessage());</span>
-        }
+<span class="fc" id="L40">        }</span>
 <span class="fc" id="L41">        return StandardCharsets.UTF_8;</span>
     }
 }

@@ -1,4 +1,5 @@
 com\universaldiff\core\model\FileDescriptor.class
+com\universaldiff\format\txt\TxtFormatAdapter$DeltaInfo.class
 com\universaldiff\format\json\spi\JsonMerger.class
 com\universaldiff\format\txt\TxtFormatAdapter.class
 com\universaldiff\format\xml\XmlFormatAdapter$1.class

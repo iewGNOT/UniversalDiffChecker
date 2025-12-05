@@ -22,7 +22,7 @@ import java.util.Set;
 <span class="fc" id="L22">    FormatType(String... extensions) {</span>
 <span class="pc bpc" id="L23" title="1 of 4 branches missed.">        if (extensions == null || extensions.length == 0) {</span>
 <span class="fc" id="L24">            this.extensions = Collections.emptySet();</span>
-<span class="fc" id="L25">        } else {</span>
+        } else {
 <span class="fc" id="L26">            this.extensions = Collections.unmodifiableSet(new HashSet&lt;&gt;(Arrays.asList(extensions)));</span>
         }
 <span class="fc" id="L28">    }</span>

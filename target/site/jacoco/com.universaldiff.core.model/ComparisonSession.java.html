@@ -15,12 +15,12 @@ public final class ComparisonSession {
     private final DiffResult diffResult;
     private final FormatAdapter adapter;
 
-<span class="fc" id="L18">    public ComparisonSession(FileDescriptor left,</span>
+    public ComparisonSession(FileDescriptor left,
                              FileDescriptor right,
                              NormalizedContent leftContent,
                              NormalizedContent rightContent,
                              DiffResult diffResult,
-                             FormatAdapter adapter) {
+<span class="fc" id="L23">                             FormatAdapter adapter) {</span>
 <span class="fc" id="L24">        this.left = Objects.requireNonNull(left, &quot;left&quot;);</span>
 <span class="fc" id="L25">        this.right = Objects.requireNonNull(right, &quot;right&quot;);</span>
 <span class="fc" id="L26">        this.leftContent = Objects.requireNonNull(leftContent, &quot;leftContent&quot;);</span>

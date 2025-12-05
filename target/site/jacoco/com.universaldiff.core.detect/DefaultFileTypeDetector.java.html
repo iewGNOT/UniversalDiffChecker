@@ -58,7 +58,7 @@ import java.util.Locale;
 <span class="fc" id="L58">                return new DetectionResult(FormatType.BIN, false);</span>
             }
 <span class="fc" id="L60">            return new DetectionResult(FormatType.TXT, false);</span>
-<span class="nc" id="L61">        } catch (IOException e) {</span>
+<span class="pc bpc" id="L61" title="5 of 8 branches missed.">        } catch (IOException e) {</span>
 <span class="nc" id="L62">            log.warn(&quot;Failed to inspect file {} for type detection&quot;, path, e);</span>
 <span class="nc" id="L63">            return new DetectionResult(FormatType.UNKNOWN, false);</span>
         }

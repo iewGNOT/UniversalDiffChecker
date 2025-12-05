@@ -36,20 +36,20 @@ import java.util.Map;
 <span class="pc bpc" id="L36" title="1 of 2 branches missed.">            if (!rightMap.containsKey(path)) {</span>
 <span class="nc" id="L37">                diffIndex.put(path, DiffType.DELETE);</span>
 <span class="nc" id="L38">                fragments.put(path, List.of(new DiffFragment(DiffSide.LEFT, 0, 0, leftMap.get(path))));</span>
-<span class="pc bfc" id="L39" title="All 2 branches covered.">            } else if (!leftMap.get(path).equals(rightMap.get(path))) {</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">            } else if (!leftMap.get(path).equals(rightMap.get(path))) {</span>
 <span class="fc" id="L40">                diffIndex.put(path, DiffType.MODIFY);</span>
 <span class="fc" id="L41">                fragments.put(path, List.of(</span>
 <span class="fc" id="L42">                        new DiffFragment(DiffSide.LEFT, 0, 0, leftMap.get(path)),</span>
 <span class="fc" id="L43">                        new DiffFragment(DiffSide.RIGHT, 0, 0, rightMap.get(path))</span>
                 ));
             }
-        }
+<span class="fc" id="L46">        }</span>
 <span class="fc bfc" id="L47" title="All 2 branches covered.">        for (String path : rightMap.keySet()) {</span>
 <span class="fc bfc" id="L48" title="All 2 branches covered.">            if (!leftMap.containsKey(path)) {</span>
 <span class="fc" id="L49">                diffIndex.put(path, DiffType.INSERT);</span>
 <span class="fc" id="L50">                fragments.put(path, List.of(new DiffFragment(DiffSide.RIGHT, 0, 0, rightMap.get(path))));</span>
             }
-        }
+<span class="fc" id="L52">        }</span>
 
 <span class="fc" id="L54">        List&lt;DiffHunk&gt; hunks = new ArrayList&lt;&gt;();</span>
 <span class="fc bfc" id="L55" title="All 2 branches covered.">        for (Map.Entry&lt;String, DiffType&gt; entry : diffIndex.entrySet()) {</span>
@@ -58,10 +58,10 @@ import java.util.Map;
 <span class="fc" id="L58">            List&lt;DiffFragment&gt; fragList = fragments.get(path);</span>
 <span class="fc" id="L59">            hunks.add(DiffHunk.of(</span>
 <span class="fc" id="L60">                    &quot;json-path-&quot; + encode(path),</span>
-<span class="fc" id="L61">                    type,</span>
+                    type,
 <span class="pc bpc" id="L62" title="1 of 2 branches missed.">                    path.isEmpty() ? &quot;/&quot; : path,</span>
-<span class="fc" id="L63">                    fragList));</span>
-        }
+                    fragList));
+<span class="fc" id="L64">        }</span>
 
 <span class="fc" id="L66">        return new DiffResult(FormatType.JSON, hunks, Duration.between(start, Instant.now()));</span>
     }
@@ -75,7 +75,7 @@ import java.util.Map;
 <span class="fc" id="L75">                String value = record.substring(sep + 3);</span>
 <span class="fc" id="L76">                map.put(path, value);</span>
             }
-        }
+<span class="fc" id="L78">        }</span>
 <span class="fc" id="L79">        return map;</span>
     }
 

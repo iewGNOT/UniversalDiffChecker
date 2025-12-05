@@ -70,9 +70,9 @@ import java.util.Map;
 <span class="fc" id="L70">        factory.setNamespaceAware(true);</span>
         try {
 <span class="fc" id="L72">            factory.setFeature(&quot;http://apache.org/xml/features/nonvalidating/load-external-dtd&quot;, false);</span>
-<span class="pc" id="L73">        } catch (ParserConfigurationException ex) {</span>
+<span class="nc" id="L73">        } catch (ParserConfigurationException ex) {</span>
 <span class="nc" id="L74">            throw new XmlProcessingException(&quot;XML parser configuration error&quot;, ex);</span>
-        }
+<span class="fc" id="L75">        }</span>
 <span class="fc" id="L76">        try (InputStream in = Files.newInputStream(path)) {</span>
 <span class="fc" id="L77">            DocumentBuilder builder = factory.newDocumentBuilder();</span>
 <span class="fc" id="L78">            return builder.parse(in);</span>
@@ -130,29 +130,29 @@ import java.util.Map;
 <span class="pc bpc" id="L130" title="1 of 2 branches missed.">            if (!rightMap.containsKey(path)) {</span>
 <span class="nc" id="L131">                hunks.add(DiffHunk.of(</span>
 <span class="nc" id="L132">                        &quot;xml-path-&quot; + encode(path),</span>
-<span class="nc" id="L133">                        DiffType.DELETE,</span>
-<span class="nc" id="L134">                        path,</span>
+                        DiffType.DELETE,
+                        path,
 <span class="nc" id="L135">                        List.of(new DiffFragment(DiffSide.LEFT, 0, 0, leftMap.get(path)))));</span>
-<span class="pc bfc" id="L136" title="All 2 branches covered.">            } else if (!leftMap.get(path).equals(rightMap.get(path))) {</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">            } else if (!leftMap.get(path).equals(rightMap.get(path))) {</span>
 <span class="fc" id="L137">                hunks.add(DiffHunk.of(</span>
 <span class="fc" id="L138">                        &quot;xml-path-&quot; + encode(path),</span>
-<span class="fc" id="L139">                        DiffType.MODIFY,</span>
-<span class="fc" id="L140">                        path,</span>
+                        DiffType.MODIFY,
+                        path,
 <span class="fc" id="L141">                        List.of(</span>
 <span class="fc" id="L142">                                new DiffFragment(DiffSide.LEFT, 0, 0, leftMap.get(path)),</span>
 <span class="fc" id="L143">                                new DiffFragment(DiffSide.RIGHT, 0, 0, rightMap.get(path))</span>
                         )));
             }
-        }
+<span class="fc" id="L146">        }</span>
 <span class="fc bfc" id="L147" title="All 2 branches covered.">        for (String path : rightMap.keySet()) {</span>
 <span class="pc bpc" id="L148" title="1 of 2 branches missed.">            if (!leftMap.containsKey(path)) {</span>
 <span class="nc" id="L149">                hunks.add(DiffHunk.of(</span>
 <span class="nc" id="L150">                        &quot;xml-path-&quot; + encode(path),</span>
-<span class="nc" id="L151">                        DiffType.INSERT,</span>
-<span class="nc" id="L152">                        path,</span>
+                        DiffType.INSERT,
+                        path,
 <span class="nc" id="L153">                        List.of(new DiffFragment(DiffSide.RIGHT, 0, 0, rightMap.get(path)))));</span>
             }
-        }
+<span class="fc" id="L155">        }</span>
 <span class="fc" id="L156">        return new DiffResult(FormatType.XML, hunks, Duration.between(start, Instant.now()));</span>
     }
 
@@ -171,7 +171,7 @@ import java.util.Map;
 <span class="pc bpc" id="L171" title="1 of 2 branches missed.">            if (sep &gt; 0) {</span>
 <span class="fc" id="L172">                map.put(record.substring(0, sep), record.substring(sep + 3));</span>
             }
-        }
+<span class="fc" id="L174">        }</span>
 <span class="fc" id="L175">        return map;</span>
     }
 
@@ -191,7 +191,7 @@ import java.util.Map;
 <span class="pc bpc" id="L191" title="2 of 4 branches missed.">            switch (decision.getChoice()) {</span>
                 case TAKE_LEFT -&gt; {
                     // no-op
-                }
+<span class="nc" id="L194">                }</span>
 <span class="fc" id="L195">                case TAKE_RIGHT -&gt; applyFromRight(merged, rightDoc, xpath, path);</span>
                 case MANUAL -&gt; {
 <span class="pc bpc" id="L197" title="1 of 2 branches missed.">                    if (decision.getManualContent() != null) {</span>
@@ -199,7 +199,7 @@ import java.util.Map;
                     }
                 }
             }
-        }
+<span class="fc" id="L202">        }</span>
 <span class="pc bpc" id="L203" title="1 of 2 branches missed.">        if (outputPath != null) {</span>
 <span class="fc" id="L204">            Files.writeString(outputPath, serialize(merged), left.getEncoding());</span>
         }
@@ -232,7 +232,7 @@ import java.util.Map;
 <span class="nc" id="L232">        } catch (XPathExpressionException ex) {</span>
 <span class="nc" id="L233">            log.debug(&quot;XPath evaluation failed for path '{}' during merge&quot;, path, ex);</span>
 <span class="nc" id="L234">            throw new XmlProcessingException(&quot;Failed to apply XML merge for path &quot; + path, ex);</span>
-        }
+<span class="fc" id="L235">        }</span>
 <span class="fc" id="L236">    }</span>
 
     private void applyManual(Document target, XPath xpath, String path, String value) throws IOException {
@@ -251,7 +251,7 @@ import java.util.Map;
 <span class="nc" id="L251">        } catch (XPathExpressionException ex) {</span>
 <span class="nc" id="L252">            log.debug(&quot;XPath evaluation failed for manual content at path '{}'&quot;, path, ex);</span>
 <span class="nc" id="L253">            throw new XmlProcessingException(&quot;Failed to apply manual XML content for path &quot; + path, ex);</span>
-        }
+<span class="fc" id="L254">        }</span>
 <span class="fc" id="L255">    }</span>
 
     private String parentPath(String path) {

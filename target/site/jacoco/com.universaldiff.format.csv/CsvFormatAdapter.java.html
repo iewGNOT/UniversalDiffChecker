@@ -92,7 +92,7 @@ import java.util.Set;
 <span class="fc bfc" id="L92" title="All 2 branches covered.">            if (value.chars().anyMatch(Character::isDigit)) {</span>
 <span class="fc" id="L93">                return false;</span>
             }
-        }
+<span class="fc" id="L95">        }</span>
 <span class="fc" id="L96">        return true;</span>
     }
 
@@ -118,8 +118,8 @@ import java.util.Set;
 <span class="fc bfc" id="L118" title="All 2 branches covered.">                if (!leftRow.equals(rightRow)) {</span>
 <span class="fc" id="L119">                    hunks.add(DiffHunk.of(</span>
 <span class="fc" id="L120">                            &quot;csv-row-&quot; + encodeKey(key),</span>
-<span class="fc" id="L121">                            DiffType.MODIFY,</span>
-<span class="fc" id="L122">                            &quot;Row &quot; + key,</span>
+                            DiffType.MODIFY,
+                            &quot;Row &quot; + key,
 <span class="fc" id="L123">                            List.of(</span>
 <span class="fc" id="L124">                                    new DiffFragment(DiffSide.LEFT, 0, leftRow.size() - 1, renderRow(leftTable, leftRow)),</span>
 <span class="fc" id="L125">                                    new DiffFragment(DiffSide.RIGHT, 0, rightRow.size() - 1, renderRow(rightTable, rightRow))</span>
@@ -128,17 +128,17 @@ import java.util.Set;
 <span class="pc bpc" id="L128" title="1 of 2 branches missed.">            } else if (leftRow == null) {</span>
 <span class="fc" id="L129">                hunks.add(DiffHunk.of(</span>
 <span class="fc" id="L130">                        &quot;csv-row-&quot; + encodeKey(key),</span>
-<span class="fc" id="L131">                        DiffType.INSERT,</span>
-<span class="fc" id="L132">                        &quot;Insert row &quot; + key,</span>
+                        DiffType.INSERT,
+                        &quot;Insert row &quot; + key,
 <span class="fc" id="L133">                        List.of(new DiffFragment(DiffSide.RIGHT, 0, 0, renderRow(rightTable, rightRow)))));</span>
-<span class="fc" id="L134">            } else {</span>
+            } else {
 <span class="nc" id="L135">                hunks.add(DiffHunk.of(</span>
 <span class="nc" id="L136">                        &quot;csv-row-&quot; + encodeKey(key),</span>
-<span class="nc" id="L137">                        DiffType.DELETE,</span>
-<span class="nc" id="L138">                        &quot;Delete row &quot; + key,</span>
+                        DiffType.DELETE,
+                        &quot;Delete row &quot; + key,
 <span class="nc" id="L139">                        List.of(new DiffFragment(DiffSide.LEFT, 0, 0, renderRow(leftTable, leftRow)))));</span>
             }
-        }
+<span class="fc" id="L141">        }</span>
 <span class="fc" id="L142">        return new DiffResult(FormatType.CSV, hunks, Duration.between(start, Instant.now()));</span>
     }
 
@@ -210,20 +210,20 @@ import java.util.Set;
 <span class="pc bpc" id="L210" title="2 of 4 branches missed.">            switch (decision.getChoice()) {</span>
                 case TAKE_LEFT -&gt; {
                     // nothing: keep left row
-                }
+<span class="nc" id="L213">                }</span>
                 case TAKE_RIGHT -&gt; {
 <span class="fc" id="L215">                    List&lt;String&gt; rightRow = rightMap.get(key);</span>
 <span class="pc bpc" id="L216" title="1 of 2 branches missed.">                    if (rightRow != null) {</span>
 <span class="fc" id="L217">                        merged.put(key, new ArrayList&lt;&gt;(rightRow));</span>
                     }
-                }
+<span class="fc" id="L219">                }</span>
                 case MANUAL -&gt; {
 <span class="pc bpc" id="L221" title="1 of 2 branches missed.">                    if (decision.getManualContent() != null) {</span>
 <span class="fc" id="L222">                        merged.put(key, parseManualRow(decision.getManualContent(), leftTable.getHeaders()));</span>
                     }
                 }
             }
-        }
+<span class="fc" id="L226">        }</span>
 <span class="pc bpc" id="L227" title="1 of 2 branches missed.">        if (outputPath != null) {</span>
 <span class="fc" id="L228">            List&lt;String&gt; lines = new ArrayList&lt;&gt;();</span>
 <span class="pc bpc" id="L229" title="1 of 2 branches missed.">            if (!leftTable.getHeaders().isEmpty()) {</span>
@@ -231,7 +231,7 @@ import java.util.Set;
             }
 <span class="fc bfc" id="L232" title="All 2 branches covered.">            for (List&lt;String&gt; row : merged.values()) {</span>
 <span class="fc" id="L233">                lines.add(formatCsvLine(row));</span>
-            }
+<span class="fc" id="L234">            }</span>
 <span class="fc" id="L235">            Files.write(outputPath, lines, left.getEncoding());</span>
         }
 <span class="fc" id="L237">        return new MergeResult(FormatType.CSV, outputPath, Duration.between(start, Instant.now()));</span>
@@ -257,10 +257,10 @@ import java.util.Set;
 <span class="fc bfc" id="L257" title="All 2 branches covered.">        for (String value : row) {</span>
 <span class="pc bpc" id="L258" title="3 of 6 branches missed.">            if (value.contains(&quot;,&quot;) || value.contains(&quot;\&quot;&quot;) || value.contains(&quot;\n&quot;)) {</span>
 <span class="nc" id="L259">                escaped.add('&quot;' + value.replace(&quot;\&quot;&quot;, &quot;\&quot;\&quot;&quot;) + '&quot;');</span>
-<span class="nc" id="L260">            } else {</span>
+            } else {
 <span class="fc" id="L261">                escaped.add(value);</span>
             }
-        }
+<span class="fc" id="L263">        }</span>
 <span class="fc" id="L264">        return String.join(&quot;,&quot;, escaped);</span>
     }
 }

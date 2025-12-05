@@ -23,7 +23,7 @@ Universal Difference Checker (UDC) is a Java 17 / JavaFX desktop tool built to 
    - Maven 3.9+
 2. Clone the repository:
    ```bash
-   git clone https://github.com/<your-org>/universal-diff-checker.git
+   git clone https://github.com/iewGNOT/UniversalDiffChecker.git
    cd universal-diff-checker
    ```
 3. Build the project:
@@ -53,12 +53,6 @@ Universal Difference Checker (UDC) is a Java 17 / JavaFX desktop tool built to 
   - [RichTextFX](https://github.com/TomasMikula/RichTextFX)
   - [java-diff-utils](https://github.com/java-diff-utils/java-diff-utils)
   - [JaCoCo](https://www.jacoco.org/)
-
-## License
-
-Distributed under the MIT License. See `LICENSE` for details. For help choosing a different license, visit [choosealicense.com](https://choosealicense.com/).
-
----
 
 ## Badges
 

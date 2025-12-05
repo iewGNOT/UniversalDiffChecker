@@ -17,11 +17,11 @@ public final class NormalizedContent {
     private final Object nativeModel;
     private final Charset encoding;
 
-<span class="fc" id="L20">    private NormalizedContent(FormatType formatType,</span>
+    private NormalizedContent(FormatType formatType,
                               List&lt;String&gt; logicalRecords,
                               byte[] binary,
                               Object nativeModel,
-                              Charset encoding) {
+<span class="fc" id="L24">                              Charset encoding) {</span>
 <span class="fc" id="L25">        this.formatType = Objects.requireNonNull(formatType, &quot;formatType&quot;);</span>
 <span class="fc bfc" id="L26" title="All 2 branches covered.">        this.logicalRecords = logicalRecords == null</span>
 <span class="fc" id="L27">                ? List.of()</span>

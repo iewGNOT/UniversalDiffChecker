@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BinaryFormatAdapter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Universal Difference Checker</a> &gt; <a href="index.source.html" class="el_package">com.universaldiff.format.bin</a> &gt; <span class="el_source">BinaryFormatAdapter.java</span></div><h1>BinaryFormatAdapter.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">package com.universaldiff.format.bin;</span>
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>BinaryFormatAdapter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Universal Difference Checker</a> &gt; <a href="index.source.html" class="el_package">com.universaldiff.format.bin</a> &gt; <span class="el_source">BinaryFormatAdapter.java</span></div><h1>BinaryFormatAdapter.java</h1><pre class="source lang-java linenums">package com.universaldiff.format.bin;
 
 import com.universaldiff.core.model.DiffFragment;
 import com.universaldiff.core.model.DiffHunk;
@@ -41,7 +41,7 @@ public class BinaryFormatAdapter implements FormatAdapter {
 <span class="pc bpc" id="L41" title="1 of 3 branches missed.">        byte[] bytes = switch (format) {</span>
 <span class="fc" id="L42">            case BIN -&gt; Files.readAllBytes(descriptor.getPath());</span>
 <span class="fc" id="L43">            case HEX -&gt; parseHex(Files.readString(descriptor.getPath(), descriptor.getEncoding()));</span>
-<span class="nc" id="L44">            default -&gt; throw new IllegalStateException(&quot;Unexpected format: &quot; + format);</span>
+<span class="pc" id="L44">            default -&gt; throw new IllegalStateException(&quot;Unexpected format: &quot; + format);</span>
         };
 <span class="fc" id="L46">        return NormalizedContent.builder(format)</span>
 <span class="fc" id="L47">                .binary(bytes)</span>
@@ -102,33 +102,33 @@ public class BinaryFormatAdapter implements FormatAdapter {
 <span class="fc" id="L102">                    type = DiffType.INSERT;</span>
 <span class="pc bpc" id="L103" title="1 of 2 branches missed.">                } else if (startOffset &gt;= rightBytes.length) {</span>
 <span class="nc" id="L104">                    type = DiffType.DELETE;</span>
-<span class="nc" id="L105">                } else {</span>
+                } else {
 <span class="fc" id="L106">                    type = DiffType.MODIFY;</span>
                 }
 <span class="fc bfc" id="L108" title="All 2 branches covered.">                if (leftBuilder.length() &gt; 0) {</span>
 <span class="fc" id="L109">                    fragments.add(new DiffFragment(</span>
-<span class="fc" id="L110">                            DiffSide.LEFT,</span>
-<span class="fc" id="L111">                            startOffset,</span>
-<span class="fc" id="L112">                            endOffset,</span>
+                            DiffSide.LEFT,
+                            startOffset,
+                            endOffset,
 <span class="fc" id="L113">                            leftBuilder.toString().trim()));</span>
                 }
 <span class="pc bpc" id="L115" title="1 of 2 branches missed.">                if (rightBuilder.length() &gt; 0) {</span>
 <span class="fc" id="L116">                    fragments.add(new DiffFragment(</span>
-<span class="fc" id="L117">                            DiffSide.RIGHT,</span>
-<span class="fc" id="L118">                            startOffset,</span>
-<span class="fc" id="L119">                            endOffset,</span>
+                            DiffSide.RIGHT,
+                            startOffset,
+                            endOffset,
 <span class="fc" id="L120">                            rightBuilder.toString().trim()));</span>
                 }
 <span class="fc" id="L122">                int length = Math.max(1, endOffset - startOffset + 1);</span>
 <span class="fc" id="L123">                hunks.add(DiffHunk.of(</span>
 <span class="fc" id="L124">                        format.name().toLowerCase() + &quot;-offset-0x&quot; + Integer.toHexString(startOffset) + &quot;-len-&quot; + length,</span>
-<span class="fc" id="L125">                        type,</span>
+                        type,
 <span class="pc bpc" id="L126" title="1 of 2 branches missed.">                        String.format(&quot;Offset 0x%08X (%d byte%s)&quot;, startOffset, length, length == 1 ? &quot;&quot; : &quot;s&quot;),</span>
-<span class="fc" id="L127">                        fragments));</span>
+                        fragments));
 <span class="fc" id="L128">            } else {</span>
 <span class="fc" id="L129">                index++;</span>
             }
-        }
+<span class="fc" id="L131">        }</span>
 <span class="fc" id="L132">        return new DiffResult(format, hunks, Duration.between(start, Instant.now()));</span>
     }
 
@@ -152,11 +152,11 @@ public class BinaryFormatAdapter implements FormatAdapter {
 <span class="pc bpc" id="L152" title="3 of 4 branches missed.">            switch (decision.getChoice()) {</span>
                 case TAKE_LEFT -&gt; {
                     // already left, nothing to do
-                }
+<span class="nc" id="L155">                }</span>
 <span class="fc" id="L156">                case TAKE_RIGHT -&gt; applyBinaryDecision(merged, rightBytes, decision.getHunkId());</span>
 <span class="nc" id="L157">                case MANUAL -&gt; applyManualBinary(merged, decision.getHunkId(), decision.getManualContent());</span>
             }
-        }
+<span class="fc" id="L159">        }</span>
 <span class="pc bpc" id="L160" title="1 of 2 branches missed.">        if (outputPath != null) {</span>
 <span class="fc" id="L161">            Files.write(outputPath, merged);</span>
         }
@@ -215,7 +215,7 @@ public class BinaryFormatAdapter implements FormatAdapter {
         }
     }
 
-    private record Range(int offset, int length) {}
+<span class="fc" id="L218">    private record Range(int offset, int length) {}</span>
 }
 
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
