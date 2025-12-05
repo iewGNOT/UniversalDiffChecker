@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.universaldiff.format.xml.XmlFormatAdapterTest
 -------------------------------------------------------------------------------
-Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.058 s -- in com.universaldiff.format.xml.XmlFormatAdapterTest
+Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.032 s -- in com.universaldiff.format.xml.XmlFormatAdapterTest
