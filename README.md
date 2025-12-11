@@ -41,11 +41,6 @@ Universal Difference Checker (UDC) is a Java 17 / JavaFX desktop tool built to 
 3. After both files are loaded, click **Compare** (enabled only when both sides are present). The streaming diff renderer highlights line‑level or byte‑level differences without reformatting the source.
 4. Use the merge controls to apply a “take left/right” strategy and export the result. Binary files show offsets/hex/ASCII, while text panes remain selectable for copy/paste.
 
-> _Tip:_ Add screenshots to `assets/images` and reference them with Markdown syntax:
-> ```md
-> ![Diff preview](assets/images/diff-preview.png)
-> ```
-
 ## Credits
 
 - Project lead & primary developer: [Your Name](https://github.com/your-handle)
